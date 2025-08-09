@@ -247,5 +247,20 @@
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="input-section">
+            <h2>📝 Markdown Renderer</h2>
+            <textarea id="markdown-input"></textarea>
+            <br>
+            <button class="btn" onclick="renderMarkdown()">🚀 Render Markdown</button>
+            <button class="btn" onclick="clearContent()" style="background-color: #6c757d;">🗑️ Clear</button>
+        </div>
+
+        <div class="output-section">
+            <div id="rendered-content">
+                <p style="color: #6a737d; font-style: italic;">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
