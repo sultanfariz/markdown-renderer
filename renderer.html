@@ -262,5 +262,47 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Configure Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: true,
+                showSequenceNumbers: true
+            },
+            gantt: {
+                useMaxWidth: true
+            },
+            securityLevel: 'loose',
+            fontFamily: 'arial, sans-serif'
+        });
+
+        // Configure Marked
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            headerPrefix: '',
+        });
+
+        function clearContent() {
+            document.getElementById('markdown-input').value = '';
+            document.getElementById('rendered-content').innerHTML = '<p style="color: #6a737d; font-style: italic;">Content cleared. Paste new markdown content above and render it!</p>';
+        }
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('markdown-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(200, this.scrollHeight) + 'px';
+        });
+    </script>
 </body>
 </html>
