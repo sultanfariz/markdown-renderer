@@ -292,6 +292,74 @@
             headerPrefix: '',
         });
 
+        async function renderMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+            const output = document.getElementById('rendered-content');
+
+            if (!input.trim()) {
+                output.innerHTML = '<p style="color: #d73a49;">Please enter some markdown content first!</p>';
+                return;
+            }
+
+            // Custom renderer to handle mermaid code blocks
+            const renderer = new marked.Renderer();
+            renderer.code = function(code, language) {
+                if (language === 'mermaid') {
+                    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                    return `<div class="mermaid" id="${id}">${code}</div>`;
+                }
+                return `<pre><code class="language-${language || ''}">${code}</code></pre>`;
+            };
+
+            // Configure marked with custom renderer
+            marked.setOptions({
+                renderer: renderer,
+                breaks: true,
+                gfm: true,
+                headerIds: true,
+                headerPrefix: '',
+            });
+
+            // Convert markdown to HTML
+            const html = marked.parse(input);
+            output.innerHTML = html;
+
+            // Wait a bit for DOM to update
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Render mermaid diagrams
+            const mermaidElements = output.querySelectorAll('.mermaid');
+
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const element = mermaidElements[i];
+                const code = element.textContent.trim();
+
+                try {
+                    // Clear the element first
+                    element.innerHTML = '';
+
+                    // Use modern mermaid API
+                    const { svg } = await mermaid.render(`mermaid-${i}-${Date.now()}`, code);
+
+                    // Create the diagram
+                    element.innerHTML = svg;
+                } catch (error) {
+                    console.error('Mermaid rendering error:', error);
+                    element.innerHTML = `<div style="color: #d73a49; padding: 10px; border: 1px solid #d73a49; border-radius: 4px;">
+                        <strong>Mermaid Error:</strong><br>
+                        ${error.message}<br><br>
+                        <strong>Code:</strong><br>
+                        <pre style="background: #f8f8f8; padding: 8px; margin: 8px 0;">${code}</pre>
+                    </div>`;
+                }
+            }
+
+            // Re-run Prism for syntax highlighting
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+        }
+
         function clearContent() {
             document.getElementById('markdown-input').value = '';
             document.getElementById('rendered-content').innerHTML = '<p style="color: #6a737d; font-style: italic;">Content cleared. Paste new markdown content above and render it!</p>';
@@ -302,6 +370,11 @@
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.max(200, this.scrollHeight) + 'px';
+        });
+
+        // Auto-render on page load
+        window.addEventListener('load', function() {
+            setTimeout(renderMarkdown, 500);
         });
     </script>
 </body>
