@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation Viewer</title>
-
+    <title>Markdown Renderer</title>
+    
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
-
+    
     <!-- Mermaid.js for diagrams -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
-
+    
     <!-- Prism.js for syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-
+    
     <style>
         * {
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
@@ -29,7 +29,7 @@
             margin: 0;
             padding: 20px;
         }
-
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -38,18 +38,55 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
+        
         .input-section {
             margin-bottom: 30px;
             border-bottom: 2px solid #e1e4e8;
             padding-bottom: 20px;
         }
-
+        
+        .input-section.collapsed {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+        }
+        
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
         .input-section h2 {
             margin-top: 0;
+            margin-bottom: 0;
             color: #1a1a1a;
         }
-
+        
+        .toggle-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #545b62;
+        }
+        
+        .input-content {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .input-content.collapsed {
+            max-height: 0;
+            margin-top: 0;
+        }
+        
         #markdown-input {
             width: 100%;
             height: 200px;
@@ -61,7 +98,7 @@
             resize: vertical;
             background-color: #f6f8fa;
         }
-
+        
         .btn {
             background-color: #0969da;
             color: white;
@@ -72,15 +109,15 @@
             font-size: 14px;
             margin-top: 10px;
         }
-
+        
         .btn:hover {
             background-color: #0550ae;
         }
-
+        
         .output-section {
             margin-top: 30px;
         }
-
+        
         /* Markdown Styles */
         h1, h2, h3, h4, h5, h6 {
             color: #1a1a1a;
@@ -89,31 +126,31 @@
             font-weight: 600;
             line-height: 1.25;
         }
-
+        
         h1 {
             font-size: 2em;
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
         }
-
+        
         h2 {
             font-size: 1.5em;
             border-bottom: 1px solid #eee;
             padding-bottom: 8px;
         }
-
+        
         h3 {
             font-size: 1.25em;
         }
-
+        
         h4 {
             font-size: 1em;
         }
-
+        
         p {
             margin-bottom: 16px;
         }
-
+        
         code {
             background-color: #f6f8fa;
             border-radius: 3px;
@@ -122,7 +159,7 @@
             padding: 0.2em 0.4em;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
-
+        
         pre {
             background-color: #f6f8fa;
             border-radius: 6px;
@@ -132,7 +169,7 @@
             padding: 16px;
             margin-bottom: 16px;
         }
-
+        
         pre code {
             background-color: transparent;
             border: 0;
@@ -143,23 +180,23 @@
             overflow: visible;
             padding: 0;
         }
-
+        
         blockquote {
             border-left: 4px solid #dfe2e5;
             margin: 0;
             padding: 0 16px;
             color: #6a737d;
         }
-
+        
         ul, ol {
             padding-left: 30px;
             margin-bottom: 16px;
         }
-
+        
         li {
             margin-bottom: 4px;
         }
-
+        
         table {
             border-collapse: collapse;
             border-spacing: 0;
@@ -168,46 +205,77 @@
             display: block;
             overflow: auto;
         }
-
+        
         table th, table td {
             border: 1px solid #dfe2e5;
             padding: 6px 13px;
             text-align: left;
         }
-
+        
         table th {
             background-color: #f6f8fa;
             font-weight: 600;
         }
-
+        
         table tr:nth-child(2n) {
             background-color: #f6f8fa;
         }
-
+        
         .mermaid {
             text-align: center;
             margin: 20px 0;
             background: white;
             border: 1px solid #e1e4e8;
             border-radius: 6px;
-            padding: 16px;
+            padding: 24px;
+            position: relative;
+            min-height: 400px;
+            width: 100%;
+            max-width: none;
         }
-
+        
+        .mermaid-container {
+            position: relative;
+            display: block;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .copy-diagram-btn {
+            background-color: #0969da;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .copy-diagram-btn:hover {
+            background-color: #0550ae;
+        }
+        
         a {
             color: #0366d6;
             text-decoration: none;
         }
-
+        
         a:hover {
             text-decoration: underline;
         }
-
+        
         hr {
             border: none;
             border-top: 1px solid #e1e4e8;
             margin: 24px 0;
         }
-
+        
         .toc {
             background: #f6f8fa;
             border: 1px solid #d0d7de;
@@ -215,31 +283,31 @@
             padding: 16px;
             margin-bottom: 24px;
         }
-
+        
         .toc h2 {
             margin-top: 0;
             border-bottom: none;
             font-size: 1.2em;
         }
-
+        
         .toc ul {
             margin-bottom: 0;
         }
-
+        
         .toc li {
             margin-bottom: 2px;
         }
-
+        
         /* Responsive */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
-
+            
             .container {
                 padding: 20px;
             }
-
+            
             #markdown-input {
                 height: 150px;
             }
@@ -248,14 +316,19 @@
 </head>
 <body>
     <div class="container">
-        <div class="input-section">
-            <h2>📝 Markdown Renderer</h2>
+        <div class="input-section" id="input-section">
+            <div class="input-header">
+                <h2>📝 Markdown Renderer</h2>
+                <button class="toggle-btn" onclick="toggleInput()">🔽 Collapse</button>
+            </div>
+            <div class="input-content" id="input-content">
             <textarea id="markdown-input"></textarea>
             <br>
             <button class="btn" onclick="renderMarkdown()">🚀 Render Markdown</button>
             <button class="btn" onclick="clearContent()" style="background-color: #6c757d;">🗑️ Clear</button>
+            </div>
         </div>
-
+        
         <div class="output-section">
             <div id="rendered-content">
                 <p style="color: #6a737d; font-style: italic;">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
@@ -295,22 +368,24 @@
         async function renderMarkdown() {
             const input = document.getElementById('markdown-input').value;
             const output = document.getElementById('rendered-content');
-
+            
             if (!input.trim()) {
                 output.innerHTML = '<p style="color: #d73a49;">Please enter some markdown content first!</p>';
                 return;
             }
-
+            
             // Custom renderer to handle mermaid code blocks
             const renderer = new marked.Renderer();
             renderer.code = function(code, language) {
                 if (language === 'mermaid') {
                     const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-                    return `<div class="mermaid" id="${id}">${code}</div>`;
+                    return `<div class="mermaid-container">
+                        <div class="mermaid" id="${id}">${code}</div>
+                    </div>`;
                 }
                 return `<pre><code class="language-${language || ''}">${code}</code></pre>`;
             };
-
+            
             // Configure marked with custom renderer
             marked.setOptions({
                 renderer: renderer,
@@ -319,30 +394,40 @@
                 headerIds: true,
                 headerPrefix: '',
             });
-
+            
             // Convert markdown to HTML
             const html = marked.parse(input);
             output.innerHTML = html;
-
+            
             // Wait a bit for DOM to update
             await new Promise(resolve => setTimeout(resolve, 100));
-
+            
             // Render mermaid diagrams
             const mermaidElements = output.querySelectorAll('.mermaid');
-
+            
             for (let i = 0; i < mermaidElements.length; i++) {
                 const element = mermaidElements[i];
                 const code = element.textContent.trim();
-
+                
                 try {
                     // Clear the element first
                     element.innerHTML = '';
-
+                    
                     // Use modern mermaid API
                     const { svg } = await mermaid.render(`mermaid-${i}-${Date.now()}`, code);
-
-                    // Create the diagram
+                    
+                    // Set the SVG directly into the mermaid element
                     element.innerHTML = svg;
+                    
+                    // Create and add the copy button after the diagram
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-diagram-btn';
+                    copyButton.innerHTML = '📋 Copy as Image';
+                    copyButton.onclick = () => copyDiagramAsImage(element.id);
+                    
+                    // Add button after the mermaid element
+                    element.parentNode.appendChild(copyButton);
+                    
                 } catch (error) {
                     console.error('Mermaid rendering error:', error);
                     element.innerHTML = `<div style="color: #d73a49; padding: 10px; border: 1px solid #d73a49; border-radius: 4px;">
@@ -353,29 +438,284 @@
                     </div>`;
                 }
             }
-
+            
             // Re-run Prism for syntax highlighting
             if (typeof Prism !== 'undefined') {
                 Prism.highlightAll();
             }
         }
-
+        
         function clearContent() {
             document.getElementById('markdown-input').value = '';
             document.getElementById('rendered-content').innerHTML = '<p style="color: #6a737d; font-style: italic;">Content cleared. Paste new markdown content above and render it!</p>';
         }
-
+        
         // Auto-resize textarea
         const textarea = document.getElementById('markdown-input');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.max(200, this.scrollHeight) + 'px';
         });
+        
+        // Keyboard shortcut for rendering (Ctrl+Enter or Cmd+Enter)
+        textarea.addEventListener('keydown', async function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                await renderMarkdown();
+            }
+        });
+
+        // Toggle input section
+        function toggleInput() {
+            const inputSection = document.getElementById('input-section');
+            const inputContent = document.getElementById('input-content');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            
+            if (inputContent.classList.contains('collapsed')) {
+                // Expand
+                inputContent.classList.remove('collapsed');
+                inputSection.classList.remove('collapsed');
+                toggleBtn.innerHTML = '🔽 Collapse';
+                toggleBtn.style.backgroundColor = '#6c757d';
+            } else {
+                // Collapse
+                inputContent.classList.add('collapsed');
+                inputSection.classList.add('collapsed');
+                toggleBtn.innerHTML = '🔼 Expand';
+                toggleBtn.style.backgroundColor = '#28a745';
+            }
+        }
 
         // Auto-render on page load
         window.addEventListener('load', function() {
             setTimeout(renderMarkdown, 500);
         });
+
+        // Function to copy diagram as image
+        async function copyDiagramAsImage(diagramId) {
+            try {
+                // Ensure window is focused before clipboard operation
+                window.focus();
+                
+                const diagramElement = document.getElementById(diagramId);
+                const svgElement = diagramElement.querySelector('svg');
+                
+                if (!svgElement) {
+                    alert('No diagram found to copy');
+                    return;
+                }
+
+                // Get SVG dimensions
+                const svgRect = svgElement.getBoundingClientRect();
+                const svgWidth = svgRect.width || 800;
+                const svgHeight = svgRect.height || 600;
+                
+                // Create canvas directly
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set high resolution with zero padding
+                const scale = 3;
+                const padding = 0; // Zero padding
+                canvas.width = (svgWidth + padding * 2) * scale;
+                canvas.height = (svgHeight + padding * 2) * scale;
+                
+                // Scale context
+                ctx.scale(scale, scale);
+                
+                // Fill with bright white background
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
+                
+                // Enable high-quality rendering
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.textRenderingOptimization = 'optimizeQuality';
+                
+                // Create a simplified SVG string approach
+                const svgClone = svgElement.cloneNode(true);
+                
+                // Set proper dimensions and WHITE background
+                svgClone.setAttribute('width', svgWidth);
+                svgClone.setAttribute('height', svgHeight);
+                svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                
+                // Add bright white background rect as first child
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('width', '100%');
+                bgRect.setAttribute('height', '100%');
+                bgRect.setAttribute('fill', '#FFFFFF');
+                bgRect.setAttribute('stroke', 'none');
+                svgClone.insertBefore(bgRect, svgClone.firstChild);
+                
+                // More aggressive sequence number styling with pure white background
+                const allElements = svgClone.querySelectorAll('*');
+                allElements.forEach(el => {
+                    // Remove any outer borders/containers
+                    if (el.tagName === 'g' && el.getAttribute('class')?.includes('background')) {
+                        el.remove();
+                        return;
+                    }
+                    
+                    // Remove outer rectangle borders
+                    if (el.tagName === 'rect' && (
+                        el.getAttribute('width') === '100%' ||
+                        parseFloat(el.getAttribute('width')) > svgWidth * 0.9
+                    )) {
+                        // This is likely an outer container - make it invisible or remove stroke
+                        el.setAttribute('fill', '#FFFFFF');
+                        el.setAttribute('stroke', 'none');
+                        el.setAttribute('stroke-width', '0');
+                    }
+                    
+                    // Handle circles (sequence number backgrounds)
+                    else if (el.tagName === 'circle') {
+                        el.setAttribute('fill', '#000000');
+                        el.setAttribute('stroke', '#000000');
+                        el.setAttribute('stroke-width', '2');
+                    }
+                    
+                    // Handle all text elements
+                    else if (el.tagName === 'text') {
+                        const textContent = el.textContent?.trim();
+                        
+                        // Check if this is a sequence number (digit only)
+                        if (/^\d+$/.test(textContent)) {
+                            // Force white color for sequence numbers
+                            el.setAttribute('fill', '#FFFFFF');
+                            el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 14px; fill: #FFFFFF !important; text-anchor: middle; dominant-baseline: central; font-weight: bold;');
+                        } else {
+                            // Regular text (black on white background)
+                            el.setAttribute('fill', '#000000');
+                            el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 12px; fill: #000000; text-anchor: middle; dominant-baseline: central;');
+                            
+                            // Participant names should be bold
+                            const isParticipant = el.parentNode?.querySelector('rect') || 
+                                                el.previousElementSibling?.tagName === 'rect' ||
+                                                ['client', 'studio-svc', 'Database', 'web3-svc', 'System', 'Worker', 'OpenAI'].includes(textContent);
+                            
+                            if (isParticipant) {
+                                el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 14px; fill: #000000; text-anchor: middle; dominant-baseline: central; font-weight: bold;');
+                            }
+                        }
+                    }
+                    
+                    // Handle rectangles (participant boxes) - but not outer containers
+                    else if (el.tagName === 'rect' && parseFloat(el.getAttribute('width')) < svgWidth * 0.3) {
+                        el.setAttribute('fill', '#F8F8F8');
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                    
+                    // Handle lines
+                    else if (el.tagName === 'line') {
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                    
+                    // Handle paths (arrows, etc.)
+                    else if (el.tagName === 'path') {
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('fill', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                });
+                
+                // Convert to data URL using XMLSerializer
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svgClone);
+                const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+                
+                // Create image element
+                const img = new Image();
+                
+                img.onload = function() {
+                    try {
+                        // Draw the SVG image
+                        ctx.drawImage(img, padding, padding, svgWidth, svgHeight);
+                        
+                        // Convert to blob
+                        canvas.toBlob(async function(blob) {
+                            if (!blob) {
+                                showCopyFeedback(diagramId, '❌ Blob creation failed', 'red');
+                                return;
+                            }
+                            
+                            try {
+                                // Focus window again before clipboard operation
+                                window.focus();
+                                
+                                // Try clipboard with better error handling
+                                if (navigator.clipboard && window.ClipboardItem && document.hasFocus()) {
+                                    const item = new ClipboardItem({ 'image/png': blob });
+                                    await navigator.clipboard.write([item]);
+                                    showCopyFeedback(diagramId, '✅ Copied!', 'green');
+                                } else {
+                                    // Fallback: download
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `sequence-diagram-${Date.now()}.png`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    showCopyFeedback(diagramId, '📥 Downloaded!', 'blue');
+                                }
+                            } catch (error) {
+                                console.error('Clipboard error:', error);
+                                
+                                // Auto-fallback to download on clipboard error
+                                try {
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `sequence-diagram-${Date.now()}.png`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    showCopyFeedback(diagramId, '📥 Auto-downloaded!', 'blue');
+                                } catch (downloadError) {
+                                    showCopyFeedback(diagramId, '❌ Copy & download failed', 'red');
+                                }
+                            }
+                        }, 'image/png', 1.0);
+                        
+                    } catch (drawError) {
+                        console.error('Draw error:', drawError);
+                        showCopyFeedback(diagramId, '❌ Draw failed', 'red');
+                    }
+                };
+                
+                img.onerror = function(error) {
+                    console.error('SVG load error:', error);
+                    showCopyFeedback(diagramId, '❌ SVG load failed', 'red');
+                };
+                
+                // Set the data URL
+                img.src = svgDataUrl;
+                
+            } catch (error) {
+                console.error('General error:', error);
+                showCopyFeedback(diagramId, '❌ General error', 'red');
+            }
+        }
+
+        // Show feedback when copying
+        function showCopyFeedback(diagramId, message, color) {
+            const button = document.querySelector(`[onclick="copyDiagramAsImage('${diagramId}')"]`);
+            if (button) {
+                const originalText = button.textContent;
+                button.textContent = message;
+                button.style.backgroundColor = color;
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '#0969da';
+                }, 2000);
+            }
+        }
     </script>
 </body>
 </html>
