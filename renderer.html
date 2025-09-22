@@ -322,7 +322,180 @@
                 <button class="toggle-btn" onclick="toggleInput()">🔽 Collapse</button>
             </div>
             <div class="input-content" id="input-content">
-            <textarea id="markdown-input"></textarea>
+            <textarea id="markdown-input"># Markdown Syntax Guide
+
+## Table of Contents
+- [Headers](#headers)
+- [Text Formatting](#text-formatting)
+- [Lists](#lists)
+- [Links and Images](#links-and-images)
+- [Code](#code)
+- [Tables](#tables)
+- [Blockquotes](#blockquotes)
+- [Diagrams](#diagrams)
+
+## Headers
+
+# H1 Header
+## H2 Header
+### H3 Header
+#### H4 Header
+##### H5 Header
+###### H6 Header
+
+## Text Formatting
+
+**Bold text** or __bold text__
+
+*Italic text* or _italic text_
+
+~~Strikethrough text~~
+
+`Inline code`
+
+## Lists
+
+### Unordered List
+- Item 1
+- Item 2
+  - Sub-item 2.1
+  - Sub-item 2.2
+- Item 3
+
+### Ordered List
+1. First item
+2. Second item
+   1. Sub-item 2.1
+   2. Sub-item 2.2
+3. Third item
+
+### Task List
+- [x] Completed task
+- [ ] Incomplete task
+- [ ] Another task
+
+## Links and Images
+
+[Link text](https://example.com)
+
+![Alt text](https://via.placeholder.com/150x100?text=Image)
+
+## Code
+
+### Inline Code
+Use `console.log()` to print to console.
+
+### Code Block
+```javascript
+function greetUser(name) {
+    console.log(`Hello, ${name}!`);
+    return `Welcome, ${name}`;
+}
+
+// Call the function
+const message = greetUser("World");
+```
+
+### Python Example
+```python
+def calculate_fibonacci(n):
+    if n <= 1:
+        return n
+    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+
+# Generate first 10 fibonacci numbers
+for i in range(10):
+    print(f"F({i}) = {calculate_fibonacci(i)}")
+```
+
+## Tables
+
+| Feature | Supported | Notes |
+|---------|-----------|-------|
+| Headers | ✅ | H1-H6 |
+| Lists | ✅ | Ordered & Unordered |
+| Code Blocks | ✅ | Syntax highlighting |
+| Tables | ✅ | With alignment |
+| Mermaid | ✅ | Diagrams & flowcharts |
+| Math | ❌ | Not implemented |
+
+### Aligned Table
+
+| Left Aligned | Center Aligned | Right Aligned |
+|:-------------|:--------------:|--------------:|
+| Text | Text | Text |
+| More text | More text | More text |
+
+## Blockquotes
+
+> This is a blockquote.
+> 
+> It can span multiple lines and paragraphs.
+> 
+> > This is a nested blockquote.
+
+## Diagrams
+
+### Flowchart
+```mermaid
+flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Process A]
+    B -->|No| D[Process B]
+    C --> E[End]
+    D --> E
+```
+
+### Sequence Diagram
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant Database
+
+    User->>App: Login request
+    activate App
+    App->>Database: Validate credentials
+    activate Database
+    Database-->>App: Validation result
+    deactivate Database
+    App-->>User: Login response
+    deactivate App
+```
+
+### Class Diagram
+```mermaid
+classDiagram
+    class User {
+        +String name
+        +String email
+        +login()
+        +logout()
+    }
+    
+    class Admin {
+        +String permissions
+        +manageUsers()
+    }
+    
+    User <|-- Admin
+```
+
+---
+
+## Additional Elements
+
+### Horizontal Rule
+Use `---` to create a horizontal rule.
+
+### Line Breaks
+End a line with two spaces  
+to create a line break.
+
+### Escape Characters
+Use backslash to escape \*special\* characters.
+
+**Try editing this content and click "Render Markdown" to see the results!**</textarea>
             <br>
             <button class="btn" onclick="renderMarkdown()">🚀 Render Markdown</button>
             <button class="btn" onclick="clearContent()" style="background-color: #6c757d;">🗑️ Clear</button>
