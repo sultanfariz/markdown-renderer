@@ -4,164 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Renderer</title>
-    
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#007AFF",
+                        "background-light": "#F9F9F9",
+                        "background-dark": "#1C1C1E",
+                        "surface-light": "rgba(255, 255, 255, 0.8)",
+                        "surface-dark": "rgba(44, 44, 46, 0.7)",
+                        "text-light": "#000000",
+                        "text-dark": "#FFFFFF",
+                        "secondary-text-light": "#6b7280",
+                        "secondary-text-dark": "#8E8E93",
+                        "border-light": "rgba(0, 0, 0, 0.1)",
+                        "border-dark": "rgba(255, 255, 255, 0.2)",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                    },
+                },
+            },
+        };
+    </script>
+
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
-    
+
     <!-- Mermaid.js for diagrams -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
-    
+
     <!-- Prism.js for syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" media="(prefers-color-scheme: dark)">
     
     <style>
-        * {
-            box-sizing: border-box;
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #24292e;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 20px;
+
+        /* Dark mode styles for rendered markdown content */
+        .dark #rendered-content {
+            color: #FFFFFF;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        .dark #rendered-content h1,
+        .dark #rendered-content h2,
+        .dark #rendered-content h3,
+        .dark #rendered-content h4,
+        .dark #rendered-content h5,
+        .dark #rendered-content h6 {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.2);
         }
-        
-        .input-section {
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e1e4e8;
-            padding-bottom: 20px;
+
+        .dark #rendered-content code {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
         }
-        
-        .input-section.collapsed {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
+
+        .dark #rendered-content pre {
+            background-color: rgba(255, 255, 255, 0.05);
         }
-        
-        .input-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+
+        .dark #rendered-content blockquote {
+            border-left-color: rgba(255, 255, 255, 0.3);
+            color: #8E8E93;
         }
-        
-        .input-section h2 {
-            margin-top: 0;
-            margin-bottom: 0;
-            color: #1a1a1a;
+
+        .dark #rendered-content table th,
+        .dark #rendered-content table td {
+            border-color: rgba(255, 255, 255, 0.2);
         }
-        
-        .toggle-btn {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
+
+        .dark #rendered-content table th {
+            background-color: rgba(255, 255, 255, 0.05);
         }
-        
-        .toggle-btn:hover {
-            background-color: #545b62;
+
+        .dark #rendered-content table tr:nth-child(2n) {
+            background-color: rgba(255, 255, 255, 0.02);
         }
-        
-        .input-content {
-            transition: all 0.3s ease;
-            overflow: hidden;
+
+        .dark #rendered-content a {
+            color: #007AFF;
         }
-        
-        .input-content.collapsed {
-            max-height: 0;
-            margin-top: 0;
+
+        .dark #rendered-content hr {
+            border-top-color: rgba(255, 255, 255, 0.2);
         }
-        
-        #markdown-input {
-            width: 100%;
-            height: 200px;
-            padding: 12px;
-            border: 1px solid #d0d7de;
-            border-radius: 6px;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 14px;
-            resize: vertical;
-            background-color: #f6f8fa;
+
+        .dark #rendered-content .toc {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
         }
-        
-        .btn {
-            background-color: #0969da;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
+
+        .dark .mermaid {
+            background: rgba(44, 44, 46, 0.5) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
         }
-        
-        .btn:hover {
-            background-color: #0550ae;
-        }
-        
-        .output-section {
-            margin-top: 30px;
-        }
-        
-        /* Markdown Styles */
-        h1, h2, h3, h4, h5, h6 {
-            color: #1a1a1a;
+
+        /* Markdown content styles */
+        #rendered-content h1,
+        #rendered-content h2,
+        #rendered-content h3,
+        #rendered-content h4,
+        #rendered-content h5,
+        #rendered-content h6 {
             margin-top: 24px;
             margin-bottom: 16px;
             font-weight: 600;
             line-height: 1.25;
         }
-        
-        h1 {
+
+        #rendered-content h1 {
             font-size: 2em;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 10px;
         }
-        
-        h2 {
+
+        #rendered-content h2 {
             font-size: 1.5em;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 8px;
         }
-        
-        h3 {
+
+        #rendered-content h3 {
             font-size: 1.25em;
         }
-        
-        h4 {
+
+        #rendered-content h4 {
             font-size: 1em;
         }
-        
-        p {
+
+        #rendered-content p {
             margin-bottom: 16px;
         }
-        
-        code {
-            background-color: #f6f8fa;
+
+        #rendered-content code {
+            background-color: rgba(0, 0, 0, 0.05);
             border-radius: 3px;
             font-size: 85%;
             margin: 0;
             padding: 0.2em 0.4em;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
-        
-        pre {
-            background-color: #f6f8fa;
+
+        #rendered-content pre {
+            background-color: rgba(0, 0, 0, 0.03);
             border-radius: 6px;
             font-size: 85%;
             line-height: 1.45;
@@ -169,8 +174,8 @@
             padding: 16px;
             margin-bottom: 16px;
         }
-        
-        pre code {
+
+        #rendered-content pre code {
             background-color: transparent;
             border: 0;
             display: inline;
@@ -180,24 +185,25 @@
             overflow: visible;
             padding: 0;
         }
-        
-        blockquote {
-            border-left: 4px solid #dfe2e5;
+
+        #rendered-content blockquote {
+            border-left: 4px solid rgba(0, 0, 0, 0.2);
             margin: 0;
             padding: 0 16px;
             color: #6a737d;
         }
-        
-        ul, ol {
+
+        #rendered-content ul,
+        #rendered-content ol {
             padding-left: 30px;
             margin-bottom: 16px;
         }
-        
-        li {
+
+        #rendered-content li {
             margin-bottom: 4px;
         }
-        
-        table {
+
+        #rendered-content table {
             border-collapse: collapse;
             border-spacing: 0;
             margin-bottom: 16px;
@@ -205,27 +211,65 @@
             display: block;
             overflow: auto;
         }
-        
-        table th, table td {
-            border: 1px solid #dfe2e5;
+
+        #rendered-content table th,
+        #rendered-content table td {
+            border: 1px solid rgba(0, 0, 0, 0.1);
             padding: 6px 13px;
             text-align: left;
         }
-        
-        table th {
-            background-color: #f6f8fa;
+
+        #rendered-content table th {
+            background-color: rgba(0, 0, 0, 0.03);
             font-weight: 600;
         }
-        
-        table tr:nth-child(2n) {
-            background-color: #f6f8fa;
+
+        #rendered-content table tr:nth-child(2n) {
+            background-color: rgba(0, 0, 0, 0.02);
         }
-        
+
+        #rendered-content a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        #rendered-content a:hover {
+            text-decoration: underline;
+        }
+
+        #rendered-content hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin: 24px 0;
+        }
+
+        #rendered-content .toc {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        #rendered-content .toc h2 {
+            margin-top: 0;
+            border-bottom: none;
+            font-size: 1.2em;
+        }
+
+        #rendered-content .toc ul {
+            margin-bottom: 0;
+        }
+
+        #rendered-content .toc li {
+            margin-bottom: 2px;
+        }
+
         .mermaid {
             text-align: center;
             margin: 20px 0;
             background: white;
-            border: 1px solid #e1e4e8;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 6px;
             padding: 24px;
             position: relative;
@@ -233,20 +277,20 @@
             width: 100%;
             max-width: none;
         }
-        
+
         .mermaid-container {
             position: relative;
             display: block;
             width: 100%;
             margin: 20px 0;
         }
-        
+
         .copy-diagram-btn {
-            background-color: #0969da;
+            background-color: #007AFF;
             color: white;
             border: none;
             padding: 6px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
             margin-top: 8px;
@@ -256,73 +300,33 @@
             margin-left: auto;
             margin-right: auto;
         }
-        
+
         .copy-diagram-btn:hover {
-            background-color: #0550ae;
-        }
-        
-        a {
-            color: #0366d6;
-            text-decoration: none;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        hr {
-            border: none;
-            border-top: 1px solid #e1e4e8;
-            margin: 24px 0;
-        }
-        
-        .toc {
-            background: #f6f8fa;
-            border: 1px solid #d0d7de;
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .toc h2 {
-            margin-top: 0;
-            border-bottom: none;
-            font-size: 1.2em;
-        }
-        
-        .toc ul {
-            margin-bottom: 0;
-        }
-        
-        .toc li {
-            margin-bottom: 2px;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 20px;
-            }
-            
-            #markdown-input {
-                height: 150px;
-            }
+            background-color: rgba(0, 122, 255, 0.9);
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="input-section" id="input-section">
-            <div class="input-header">
-                <h2>📝 Markdown Renderer</h2>
-                <button class="toggle-btn" onclick="toggleInput()">🔽 Collapse</button>
-            </div>
-            <div class="input-content" id="input-content">
-            <textarea id="markdown-input"># Markdown Syntax Guide
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
+    <div class="min-h-screen p-4 sm:p-6 lg:p-8">
+        <main class="max-w-7xl mx-auto">
+            <header class="flex items-center justify-between mb-8">
+                <h1 class="text-3xl font-bold tracking-tight">Markdown Renderer</h1>
+                <button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle">
+                    <span class="material-icons-outlined dark:hidden">dark_mode</span>
+                    <span class="material-icons-outlined hidden dark:inline">light_mode</span>
+                </button>
+            </header>
+
+            <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark" id="editor-container">
+                <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                    <h2 class="text-lg font-semibold">Markdown Input</h2>
+                    <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="collapse-btn">
+                        <span id="collapse-text">Collapse</span>
+                        <span class="material-icons-outlined ml-1" id="collapse-icon">expand_less</span>
+                    </button>
+                </div>
+                <div id="textarea-wrapper">
+                    <textarea class="w-full h-64 p-4 bg-transparent border-0 focus:ring-0 resize-y font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="markdown-input" placeholder="Enter your markdown here..."># Markdown Syntax Guide
 
 ## Table of Contents
 - [Headers](#headers)
@@ -496,17 +500,19 @@ to create a line break.
 Use backslash to escape \*special\* characters.
 
 **Try editing this content and click "Render Markdown" to see the results!**</textarea>
-            <br>
-            <button class="btn" onclick="renderMarkdown()">🚀 Render Markdown</button>
-            <button class="btn" onclick="clearContent()" style="background-color: #6c757d;">🗑️ Clear</button>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-btn">Clear</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="output-section">
-            <div id="rendered-content">
-                <p style="color: #6a737d; font-style: italic;">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+
+            <div class="mt-12">
+                <div id="rendered-content">
+                    <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -538,12 +544,31 @@ Use backslash to escape \*special\* characters.
             headerPrefix: '',
         });
 
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        });
+
+        // Initialize theme on page load
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         async function renderMarkdown() {
             const input = document.getElementById('markdown-input').value;
             const output = document.getElementById('rendered-content');
             
             if (!input.trim()) {
-                output.innerHTML = '<p style="color: #d73a49;">Please enter some markdown content first!</p>';
+                output.innerHTML = '<p class="text-red-500">Please enter some markdown content first!</p>';
                 return;
             }
             
@@ -620,8 +645,12 @@ Use backslash to escape \*special\* characters.
         
         function clearContent() {
             document.getElementById('markdown-input').value = '';
-            document.getElementById('rendered-content').innerHTML = '<p style="color: #6a737d; font-style: italic;">Content cleared. Paste new markdown content above and render it!</p>';
+            document.getElementById('rendered-content').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Content cleared. Paste new markdown content above and render it!</p>';
         }
+
+        // Button event listeners
+        document.getElementById('render-btn').addEventListener('click', renderMarkdown);
+        document.getElementById('clear-btn').addEventListener('click', clearContent);
         
         // Auto-resize textarea
         const textarea = document.getElementById('markdown-input');
@@ -639,25 +668,23 @@ Use backslash to escape \*special\* characters.
         });
 
         // Toggle input section
-        function toggleInput() {
-            const inputSection = document.getElementById('input-section');
-            const inputContent = document.getElementById('input-content');
-            const toggleBtn = document.querySelector('.toggle-btn');
-            
-            if (inputContent.classList.contains('collapsed')) {
-                // Expand
-                inputContent.classList.remove('collapsed');
-                inputSection.classList.remove('collapsed');
-                toggleBtn.innerHTML = '🔽 Collapse';
-                toggleBtn.style.backgroundColor = '#6c757d';
+        const collapseBtn = document.getElementById('collapse-btn');
+        const textareaWrapper = document.getElementById('textarea-wrapper');
+        const collapseText = document.getElementById('collapse-text');
+        const collapseIcon = document.getElementById('collapse-icon');
+
+        collapseBtn.addEventListener('click', () => {
+            const isCollapsed = textareaWrapper.style.display === 'none';
+            if (isCollapsed) {
+                textareaWrapper.style.display = 'block';
+                collapseText.textContent = 'Collapse';
+                collapseIcon.textContent = 'expand_less';
             } else {
-                // Collapse
-                inputContent.classList.add('collapsed');
-                inputSection.classList.add('collapsed');
-                toggleBtn.innerHTML = '🔼 Expand';
-                toggleBtn.style.backgroundColor = '#28a745';
+                textareaWrapper.style.display = 'none';
+                collapseText.textContent = 'Expand';
+                collapseIcon.textContent = 'expand_more';
             }
-        }
+        });
 
         // Auto-render on page load
         window.addEventListener('load', function() {
