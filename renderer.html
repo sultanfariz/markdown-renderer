@@ -500,6 +500,12 @@ to create a line break.
 Use backslash to escape \*special\* characters.
 
 **Try editing this content and click "Render Markdown" to see the results!**</textarea>
+                    <div class="flex justify-center py-2 border-t border-border-light dark:border-border-dark">
+                        <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="collapse-btn-bottom">
+                            <span id="collapse-text-bottom">Collapse</span>
+                            <span class="material-icons-outlined ml-1" id="collapse-icon-bottom">expand_less</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
                     <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
@@ -669,22 +675,32 @@ Use backslash to escape \*special\* characters.
 
         // Toggle input section
         const collapseBtn = document.getElementById('collapse-btn');
+        const collapseBtnBottom = document.getElementById('collapse-btn-bottom');
         const textareaWrapper = document.getElementById('textarea-wrapper');
         const collapseText = document.getElementById('collapse-text');
         const collapseIcon = document.getElementById('collapse-icon');
+        const collapseTextBottom = document.getElementById('collapse-text-bottom');
+        const collapseIconBottom = document.getElementById('collapse-icon-bottom');
 
-        collapseBtn.addEventListener('click', () => {
+        function toggleTextarea() {
             const isCollapsed = textareaWrapper.style.display === 'none';
             if (isCollapsed) {
                 textareaWrapper.style.display = 'block';
                 collapseText.textContent = 'Collapse';
                 collapseIcon.textContent = 'expand_less';
+                collapseTextBottom.textContent = 'Collapse';
+                collapseIconBottom.textContent = 'expand_less';
             } else {
                 textareaWrapper.style.display = 'none';
                 collapseText.textContent = 'Expand';
                 collapseIcon.textContent = 'expand_more';
+                collapseTextBottom.textContent = 'Expand';
+                collapseIconBottom.textContent = 'expand_more';
             }
-        });
+        }
+
+        collapseBtn.addEventListener('click', toggleTextarea);
+        collapseBtnBottom.addEventListener('click', toggleTextarea);
 
         // Auto-render on page load
         window.addEventListener('load', function() {
