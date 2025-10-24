@@ -232,6 +232,15 @@
             color: #8E8E93;
         }
 
+        .dark #rendered-content ul,
+        .dark #rendered-content ol {
+            color: #FFFFFF;
+        }
+
+        .dark #rendered-content li {
+            color: #FFFFFF;
+        }
+
         .dark #rendered-content table th,
         .dark #rendered-content table td {
             border-color: rgba(255, 255, 255, 0.2);
@@ -346,8 +355,32 @@
             margin-bottom: 16px;
         }
 
+        #rendered-content ul {
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        #rendered-content ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+        }
+
+        #rendered-content ul ul {
+            list-style-type: circle;
+        }
+
+        #rendered-content ul ul ul {
+            list-style-type: square;
+        }
+
         #rendered-content li {
             margin-bottom: 4px;
+            display: list-item;
+        }
+
+        /* Ensure task lists display properly */
+        #rendered-content li input[type="checkbox"] {
+            margin-right: 8px;
         }
 
         #rendered-content table {
