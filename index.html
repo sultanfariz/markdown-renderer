@@ -50,8 +50,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 
-    <!-- LZ-String for compression -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <!-- LZMA for high compression (75-85% reduction) -->
+    <script src="https://cdn.jsdelivr.net/npm/lzma@2.3.2/src/lzma_worker-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lzma@2.3.2/src/lzma-min.js"></script>
     
     <style>
         .glass-effect {
@@ -487,6 +488,20 @@
         .copy-diagram-btn:hover {
             background-color: rgba(0, 122, 255, 0.9);
         }
+
+        /* Loading spinner animation */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
@@ -841,8 +856,25 @@ Use backslash to escape \*special\* characters.
             document.getElementById('rendered-content').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Content cleared. Paste new markdown content above and render it!</p>';
         }
 
-        // Share functionality - encode markdown to URL
-        function shareMarkdown() {
+        // Helper function to convert byte array to base64url
+        function bytesToBase64url(bytes) {
+            const base64 = btoa(String.fromCharCode.apply(null, bytes));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        // Helper function to convert base64url to byte array
+        function base64urlToBytes(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return Array.from(bytes);
+        }
+
+        // Share functionality - encode markdown to URL with LZMA compression
+        async function shareMarkdown() {
             const input = document.getElementById('markdown-input').value;
 
             if (!input.trim()) {
@@ -850,57 +882,93 @@ Use backslash to escape \*special\* characters.
                 return;
             }
 
+            const shareBtn = document.getElementById('share-btn');
+            const originalHTML = shareBtn.innerHTML;
+
             try {
-                // Compress and encode the markdown content
-                const compressed = LZString.compressToEncodedURIComponent(input);
+                // Show loading state
+                shareBtn.innerHTML = '<span class="material-icons-outlined text-sm animate-spin">autorenew</span><span>Compressing...</span>';
+                shareBtn.disabled = true;
 
-                // Create shareable URL
-                const baseUrl = window.location.origin + window.location.pathname;
-                const shareUrl = `${baseUrl}?md=${compressed}`;
+                // Compress with LZMA (highest compression mode: 9)
+                LZMA.compress(input, 9, function(compressed) {
+                    try {
+                        // Convert to base64url for URL safety
+                        const encoded = bytesToBase64url(compressed);
 
-                // Copy to clipboard
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    // Show success feedback
-                    const shareBtn = document.getElementById('share-btn');
-                    const originalHTML = shareBtn.innerHTML;
-                    shareBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
-                    shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    shareBtn.classList.add('bg-green-500');
+                        // Create shareable URL
+                        const baseUrl = window.location.origin + window.location.pathname;
+                        const shareUrl = `${baseUrl}?md=${encoded}`;
 
-                    setTimeout(() => {
+                        // Calculate compression ratio
+                        const originalSize = new Blob([input]).size;
+                        const compressedSize = compressed.length;
+                        const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(shareUrl).then(() => {
+                            // Show success feedback with compression ratio
+                            shareBtn.innerHTML = `<span class="material-icons-outlined text-sm">check</span><span>Copied! (${ratio}% smaller)</span>`;
+                            shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                            shareBtn.classList.add('bg-green-500');
+                            shareBtn.disabled = false;
+
+                            setTimeout(() => {
+                                shareBtn.innerHTML = originalHTML;
+                                shareBtn.classList.remove('bg-green-500');
+                                shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                            }, 3000);
+                        }).catch(err => {
+                            console.error('Failed to copy to clipboard:', err);
+                            shareBtn.innerHTML = originalHTML;
+                            shareBtn.disabled = false;
+                            // Fallback: show the URL in a prompt
+                            prompt('Copy this URL to share:', shareUrl);
+                        });
+
+                    } catch (error) {
+                        console.error('Error creating share link:', error);
                         shareBtn.innerHTML = originalHTML;
-                        shareBtn.classList.remove('bg-green-500');
-                        shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy to clipboard:', err);
-                    // Fallback: show the URL in a prompt
-                    prompt('Copy this URL to share:', shareUrl);
+                        shareBtn.disabled = false;
+                        alert('Failed to create share link. Content may be too large.');
+                    }
+                }, function(percent) {
+                    // Progress callback (optional)
+                    shareBtn.innerHTML = `<span class="material-icons-outlined text-sm animate-spin">autorenew</span><span>Compressing... ${Math.round(percent * 100)}%</span>`;
                 });
 
             } catch (error) {
                 console.error('Error creating share link:', error);
-                alert('Failed to create share link. Content may be too large.');
+                shareBtn.innerHTML = originalHTML;
+                shareBtn.disabled = false;
+                alert('Failed to create share link.');
             }
         }
 
-        // Load markdown from URL parameter
+        // Load markdown from URL parameter with LZMA decompression
         function loadFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             const encodedMarkdown = urlParams.get('md');
 
             if (encodedMarkdown) {
                 try {
-                    // Decompress and decode the markdown content
-                    const markdown = LZString.decompressFromEncodedURIComponent(encodedMarkdown);
+                    // Convert from base64url to byte array
+                    const compressed = base64urlToBytes(encodedMarkdown);
 
-                    if (markdown) {
-                        document.getElementById('markdown-input').value = markdown;
-                        // Auto-render after a short delay to ensure everything is loaded
-                        setTimeout(() => renderMarkdown(), 100);
-                    } else {
-                        console.error('Failed to decode markdown from URL');
-                    }
+                    // Decompress with LZMA
+                    LZMA.decompress(compressed, function(result) {
+                        if (result) {
+                            document.getElementById('markdown-input').value = result;
+                            // Auto-render after a short delay to ensure everything is loaded
+                            setTimeout(() => renderMarkdown(), 100);
+                        } else {
+                            console.error('Failed to decode markdown from URL');
+                        }
+                    }, function(percent) {
+                        // Progress callback (optional)
+                        console.log('Decompressing:', Math.round(percent * 100) + '%');
+                    });
+
                 } catch (error) {
                     console.error('Error loading markdown from URL:', error);
                 }
