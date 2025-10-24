@@ -49,6 +49,9 @@
     <!-- Prism.js for syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <!-- LZ-String for compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     
     <style>
         .glass-effect {
@@ -232,6 +235,15 @@
             color: #8E8E93;
         }
 
+        .dark #rendered-content ul,
+        .dark #rendered-content ol {
+            color: #FFFFFF;
+        }
+
+        .dark #rendered-content li {
+            color: #FFFFFF;
+        }
+
         .dark #rendered-content table th,
         .dark #rendered-content table td {
             border-color: rgba(255, 255, 255, 0.2);
@@ -346,8 +358,32 @@
             margin-bottom: 16px;
         }
 
+        #rendered-content ul {
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        #rendered-content ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+        }
+
+        #rendered-content ul ul {
+            list-style-type: circle;
+        }
+
+        #rendered-content ul ul ul {
+            list-style-type: square;
+        }
+
         #rendered-content li {
             margin-bottom: 4px;
+            display: list-item;
+        }
+
+        /* Ensure task lists display properly */
+        #rendered-content li input[type="checkbox"] {
+            margin-right: 8px;
         }
 
         #rendered-content table {
@@ -654,9 +690,13 @@ Use backslash to escape \*special\* characters.
                         </button>
                     </div>
                 </div>
-                <div class="flex items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
+                <div class="flex flex-col sm:flex-row items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
                     <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
                     <button class="flex-1 sm:flex-none px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-btn">Clear</button>
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="share-btn">
+                        <span class="material-icons-outlined text-sm">share</span>
+                        <span>Share</span>
+                    </button>
                 </div>
             </div>
 
@@ -801,9 +841,76 @@ Use backslash to escape \*special\* characters.
             document.getElementById('rendered-content').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Content cleared. Paste new markdown content above and render it!</p>';
         }
 
+        // Share functionality - encode markdown to URL
+        function shareMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+
+            if (!input.trim()) {
+                alert('Please enter some markdown content first!');
+                return;
+            }
+
+            try {
+                // Compress and encode the markdown content
+                const compressed = LZString.compressToEncodedURIComponent(input);
+
+                // Create shareable URL
+                const baseUrl = window.location.origin + window.location.pathname;
+                const shareUrl = `${baseUrl}?md=${compressed}`;
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    // Show success feedback
+                    const shareBtn = document.getElementById('share-btn');
+                    const originalHTML = shareBtn.innerHTML;
+                    shareBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
+                    shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    shareBtn.classList.add('bg-green-500');
+
+                    setTimeout(() => {
+                        shareBtn.innerHTML = originalHTML;
+                        shareBtn.classList.remove('bg-green-500');
+                        shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    // Fallback: show the URL in a prompt
+                    prompt('Copy this URL to share:', shareUrl);
+                });
+
+            } catch (error) {
+                console.error('Error creating share link:', error);
+                alert('Failed to create share link. Content may be too large.');
+            }
+        }
+
+        // Load markdown from URL parameter
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedMarkdown = urlParams.get('md');
+
+            if (encodedMarkdown) {
+                try {
+                    // Decompress and decode the markdown content
+                    const markdown = LZString.decompressFromEncodedURIComponent(encodedMarkdown);
+
+                    if (markdown) {
+                        document.getElementById('markdown-input').value = markdown;
+                        // Auto-render after a short delay to ensure everything is loaded
+                        setTimeout(() => renderMarkdown(), 100);
+                    } else {
+                        console.error('Failed to decode markdown from URL');
+                    }
+                } catch (error) {
+                    console.error('Error loading markdown from URL:', error);
+                }
+            }
+        }
+
         // Button event listeners
         document.getElementById('render-btn').addEventListener('click', renderMarkdown);
         document.getElementById('clear-btn').addEventListener('click', clearContent);
+        document.getElementById('share-btn').addEventListener('click', shareMarkdown);
         
         // Auto-resize textarea
         const textarea = document.getElementById('markdown-input');
@@ -851,7 +958,14 @@ Use backslash to escape \*special\* characters.
 
         // Auto-render on page load
         window.addEventListener('load', function() {
-            setTimeout(renderMarkdown, 500);
+            // First check if there's shared markdown in the URL
+            loadFromURL();
+
+            // If no URL parameter, render the default content
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('md')) {
+                setTimeout(renderMarkdown, 500);
+            }
         });
 
         // Function to copy diagram as image
