@@ -891,7 +891,21 @@ Use backslash to escape \*special\* characters.
                 shareBtn.disabled = true;
 
                 // Compress with LZMA (highest compression mode: 9)
+                let compressionTimedOut = false;
+                const compressionTimeout = setTimeout(() => {
+                    compressionTimedOut = true;
+                    console.error('Compression timed out. LZMA library may not be loaded or is failing.');
+                    shareBtn.innerHTML = originalHTML;
+                    shareBtn.disabled = false;
+                    alert('Compression failed or took too long. Please try again or reload the page.');
+                }, 10000); // 10 seconds timeout
+
                 LZMA.compress(input, 9, function(compressed) {
+                    if (compressionTimedOut) {
+                        // Already handled by timeout
+                        return;
+                    }
+                    clearTimeout(compressionTimeout);
                     try {
                         // Convert to base64url for URL safety
                         const encoded = bytesToBase64url(compressed);
