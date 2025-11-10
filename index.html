@@ -331,7 +331,18 @@
             line-height: 1.45;
             overflow: auto;
             padding: 16px;
+            padding-top: 40px;
             margin-bottom: 16px;
+            position: relative;
+        }
+
+        #rendered-content pre.wrapped {
+            overflow-x: visible;
+        }
+
+        #rendered-content pre.wrapped code {
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         #rendered-content pre code {
@@ -343,6 +354,44 @@
             max-width: auto;
             overflow: visible;
             padding: 0;
+            white-space: pre;
+        }
+
+        /* Code wrap button */
+        .code-wrap-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(0, 0, 0, 0.1);
+            color: #24292e;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .code-wrap-btn:hover {
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .dark .code-wrap-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #e6e6e6;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .code-wrap-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Dark mode pre background */
+        .dark #rendered-content pre {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         #rendered-content blockquote {
@@ -847,6 +896,48 @@ Use backslash to escape \*special\* characters.
             // Re-run Prism for syntax highlighting
             if (typeof Prism !== 'undefined') {
                 Prism.highlightAll();
+            }
+
+            // Add wrap buttons to code blocks
+            addWrapButtonsToCodeBlocks();
+        }
+
+        // Function to add wrap buttons to all code blocks
+        function addWrapButtonsToCodeBlocks() {
+            const codeBlocks = document.querySelectorAll('#rendered-content pre');
+
+            codeBlocks.forEach((pre, index) => {
+                // Skip if button already exists
+                if (pre.querySelector('.code-wrap-btn')) {
+                    return;
+                }
+
+                // Create wrap button
+                const wrapBtn = document.createElement('button');
+                wrapBtn.className = 'code-wrap-btn';
+                wrapBtn.textContent = 'Wrap';
+                wrapBtn.setAttribute('aria-label', 'Toggle line wrapping');
+
+                // Add click handler
+                wrapBtn.addEventListener('click', function() {
+                    toggleCodeWrap(pre, wrapBtn);
+                });
+
+                // Insert button
+                pre.insertBefore(wrapBtn, pre.firstChild);
+            });
+        }
+
+        // Function to toggle code wrapping
+        function toggleCodeWrap(preElement, button) {
+            if (preElement.classList.contains('wrapped')) {
+                // Unwrap
+                preElement.classList.remove('wrapped');
+                button.textContent = 'Wrap';
+            } else {
+                // Wrap
+                preElement.classList.add('wrapped');
+                button.textContent = 'Unwrap';
             }
         }
         
