@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Renderer</title>
+    <title>Markdown Renderer & CSV Converter</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -506,14 +506,25 @@
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
     <div class="min-h-screen p-4 sm:p-6 lg:p-8">
         <main class="max-w-7xl mx-auto">
-            <header class="flex items-center justify-between mb-8">
-                <h1 class="text-3xl font-bold tracking-tight">Markdown Renderer</h1>
-                <button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle">
-                    <span class="material-icons-outlined dark:hidden">dark_mode</span>
-                    <span class="material-icons-outlined hidden dark:inline">light_mode</span>
-                </button>
+            <header class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-3xl font-bold tracking-tight">Markdown Renderer</h1>
+                    <button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle">
+                        <span class="material-icons-outlined dark:hidden">dark_mode</span>
+                        <span class="material-icons-outlined hidden dark:inline">light_mode</span>
+                    </button>
+                </div>
+                <div class="flex gap-2 border-b border-border-light dark:border-border-dark">
+                    <button class="px-4 py-3 font-semibold text-primary border-b-2 border-primary transition-colors" id="tab-renderer">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">description</span>Markdown Renderer
+                    </button>
+                    <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-csv">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">table</span>CSV to Markdown
+                    </button>
+                </div>
             </header>
 
+            <div id="renderer-page" class="block">
             <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark" id="editor-container">
                 <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
                     <h2 class="text-lg font-semibold">Markdown Input</h2>
@@ -719,10 +730,246 @@ Use backslash to escape \*special\* characters.
                     <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
                 </div>
             </div>
+            </div>
+
+            <div id="csv-page" class="hidden">
+            <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark" id="csv-editor-container">
+                <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                    <h2 class="text-lg font-semibold">CSV Input</h2>
+                </div>
+                <textarea class="w-full h-64 p-4 bg-transparent border-0 focus:ring-0 resize-y font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="csv-input" placeholder="Paste your CSV data here...
+Example:
+Name,Age,City,Occupation
+John Doe,28,New York,Software Engineer
+Jane Smith,34,San Francisco,Product Manager
+Bob Johnson,45,Chicago,Designer"></textarea>
+                <div class="flex flex-col sm:flex-row items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="convert-btn">Convert to Markdown</button>
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-csv-btn">Clear</button>
+                </div>
+            </div>
+
+            <div class="mt-12">
+                <h2 class="text-xl font-semibold mb-4">Markdown Output</h2>
+                <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4">
+                    <div id="markdown-output" class="font-mono text-sm leading-6 text-text-light dark:text-text-dark mb-4 p-4 bg-background-light dark:bg-background-dark rounded border border-border-light dark:border-border-dark overflow-x-auto">
+                        <p class="text-secondary-text-light dark:text-secondary-text-dark italic">Markdown output will appear here after conversion...</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-2">
+                        <button class="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="copy-markdown-btn">
+                            <span class="material-icons-outlined text-sm">content_copy</span>
+                            <span>Copy Markdown</span>
+                        </button>
+                        <button class="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="preview-btn">
+                            <span class="material-icons-outlined text-sm">preview</span>
+                            <span>Preview</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="preview-section" class="hidden mt-12">
+                <h2 class="text-xl font-semibold mb-4">Preview</h2>
+                <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4" id="csv-preview-content">
+                </div>
+            </div>
+            </div>
         </main>
     </div>
 
     <script>
+        // Tab switching functionality
+        const tabRenderer = document.getElementById('tab-renderer');
+        const tabCsv = document.getElementById('tab-csv');
+        const rendererPage = document.getElementById('renderer-page');
+        const csvPage = document.getElementById('csv-page');
+
+        function switchToRenderer() {
+            rendererPage.style.display = 'block';
+            csvPage.style.display = 'none';
+            tabRenderer.classList.add('text-primary', 'border-primary');
+            tabRenderer.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            tabCsv.classList.remove('text-primary', 'border-primary');
+            tabCsv.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
+
+        function switchToCsv() {
+            rendererPage.style.display = 'none';
+            csvPage.style.display = 'block';
+            tabCsv.classList.add('text-primary', 'border-primary');
+            tabCsv.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            tabRenderer.classList.remove('text-primary', 'border-primary');
+            tabRenderer.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
+
+        tabRenderer.addEventListener('click', switchToRenderer);
+        tabCsv.addEventListener('click', switchToCsv);
+
+        // CSV to Markdown conversion functions
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const rows = [];
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                // Simple CSV parser that handles quoted values
+                const row = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const nextChar = line[i + 1];
+
+                    if (char === '"') {
+                        if (inQuotes && nextChar === '"') {
+                            current += '"';
+                            i++; // Skip next quote
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                row.push(current.trim());
+                rows.push(row);
+            }
+
+            return rows;
+        }
+
+        function generateMarkdownTable(rows) {
+            if (rows.length === 0) {
+                return '';
+            }
+
+            const header = rows[0];
+            const data = rows.slice(1);
+
+            // Generate header row
+            let markdown = '| ' + header.join(' | ') + ' |\n';
+
+            // Generate separator row
+            markdown += '| ' + header.map(() => '---').join(' | ') + ' |\n';
+
+            // Generate data rows
+            for (const row of data) {
+                // Pad row to match header length
+                while (row.length < header.length) {
+                    row.push('');
+                }
+                markdown += '| ' + row.slice(0, header.length).join(' | ') + ' |\n';
+            }
+
+            return markdown;
+        }
+
+        // CSV page event listeners
+        const convertBtn = document.getElementById('convert-btn');
+        const clearCsvBtn = document.getElementById('clear-csv-btn');
+        const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const csvInput = document.getElementById('csv-input');
+        const markdownOutput = document.getElementById('markdown-output');
+        const previewSection = document.getElementById('preview-section');
+        const csvPreviewContent = document.getElementById('csv-preview-content');
+
+        convertBtn.addEventListener('click', function() {
+            const csvText = csvInput.value;
+
+            if (!csvText.trim()) {
+                markdownOutput.innerHTML = '<p class="text-red-500">Please enter CSV data first!</p>';
+                return;
+            }
+
+            try {
+                const rows = parseCSV(csvText);
+
+                if (rows.length === 0) {
+                    markdownOutput.innerHTML = '<p class="text-red-500">No valid CSV data found!</p>';
+                    return;
+                }
+
+                const markdown = generateMarkdownTable(rows);
+                markdownOutput.innerHTML = '<pre>' + escapeHtml(markdown) + '</pre>';
+                markdownOutput.dataset.markdown = markdown;
+                previewSection.style.display = 'none';
+            } catch (error) {
+                markdownOutput.innerHTML = '<p class="text-red-500">Error parsing CSV: ' + escapeHtml(error.message) + '</p>';
+            }
+        });
+
+        clearCsvBtn.addEventListener('click', function() {
+            csvInput.value = '';
+            markdownOutput.innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Markdown output will appear here after conversion...</p>';
+            previewSection.style.display = 'none';
+        });
+
+        copyMarkdownBtn.addEventListener('click', function() {
+            const markdown = markdownOutput.dataset.markdown;
+
+            if (!markdown) {
+                alert('Please convert CSV to Markdown first!');
+                return;
+            }
+
+            navigator.clipboard.writeText(markdown).then(() => {
+                const originalHTML = copyMarkdownBtn.innerHTML;
+                copyMarkdownBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
+                copyMarkdownBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                copyMarkdownBtn.classList.add('bg-green-500');
+
+                setTimeout(() => {
+                    copyMarkdownBtn.innerHTML = originalHTML;
+                    copyMarkdownBtn.classList.remove('bg-green-500');
+                    copyMarkdownBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        });
+
+        previewBtn.addEventListener('click', async function() {
+            const markdown = markdownOutput.dataset.markdown;
+
+            if (!markdown) {
+                alert('Please convert CSV to Markdown first!');
+                return;
+            }
+
+            try {
+                const html = marked.parse(markdown);
+                csvPreviewContent.innerHTML = html;
+                previewSection.style.display = 'block';
+                previewSection.scrollIntoView({ behavior: 'smooth' });
+
+                // Re-run Prism for syntax highlighting if any
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAll();
+                }
+            } catch (error) {
+                csvPreviewContent.innerHTML = '<p class="text-red-500">Error rendering preview: ' + escapeHtml(error.message) + '</p>';
+                previewSection.style.display = 'block';
+            }
+        });
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
         // Configure Mermaid
         mermaid.initialize({
             startOnLoad: false,
