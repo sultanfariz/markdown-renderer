@@ -501,6 +501,217 @@
         .animate-spin {
             animation: spin 1s linear infinite;
         }
+
+        /* CSV Preview Content Styling - Same as rendered-content */
+        #csv-preview-content h1,
+        #csv-preview-content h2,
+        #csv-preview-content h3,
+        #csv-preview-content h4,
+        #csv-preview-content h5,
+        #csv-preview-content h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        #csv-preview-content h1 {
+            font-size: 2em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 10px;
+        }
+
+        #csv-preview-content h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 8px;
+        }
+
+        #csv-preview-content h3 {
+            font-size: 1.25em;
+        }
+
+        #csv-preview-content h4 {
+            font-size: 1em;
+        }
+
+        #csv-preview-content p {
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #24292e;
+            border: 1px solid #e1e4e8;
+        }
+
+        #csv-preview-content pre {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            font-size: 85%;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            max-width: auto;
+            overflow: visible;
+            padding: 0;
+        }
+
+        #csv-preview-content blockquote {
+            border-left: 4px solid rgba(0, 0, 0, 0.2);
+            margin: 0;
+            padding: 0 16px;
+            color: #6a737d;
+        }
+
+        #csv-preview-content ul,
+        #csv-preview-content ol {
+            padding-left: 30px;
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content ul {
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        #csv-preview-content ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+        }
+
+        #csv-preview-content ul ul {
+            list-style-type: circle;
+        }
+
+        #csv-preview-content ul ul ul {
+            list-style-type: square;
+        }
+
+        #csv-preview-content li {
+            margin-bottom: 4px;
+            display: list-item;
+        }
+
+        #csv-preview-content li input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        #csv-preview-content table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 16px;
+            width: 100%;
+            display: block;
+            overflow: auto;
+        }
+
+        #csv-preview-content table th,
+        #csv-preview-content table td {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 6px 13px;
+            text-align: left;
+        }
+
+        #csv-preview-content table th {
+            background-color: rgba(0, 0, 0, 0.03);
+            font-weight: 600;
+        }
+
+        #csv-preview-content table tr:nth-child(2n) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        #csv-preview-content a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        #csv-preview-content a:hover {
+            text-decoration: underline;
+        }
+
+        #csv-preview-content hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin: 24px 0;
+        }
+
+        /* Dark mode styles for CSV preview */
+        .dark #csv-preview-content {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content h1,
+        .dark #csv-preview-content h2,
+        .dark #csv-preview-content h3,
+        .dark #csv-preview-content h4,
+        .dark #csv-preview-content h5,
+        .dark #csv-preview-content h6 {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #csv-preview-content code {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark #csv-preview-content pre {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark #csv-preview-content blockquote {
+            border-left-color: rgba(255, 255, 255, 0.3);
+            color: #8E8E93;
+        }
+
+        .dark #csv-preview-content ul,
+        .dark #csv-preview-content ol {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content li {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content table th,
+        .dark #csv-preview-content table td {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #csv-preview-content table th {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark #csv-preview-content table tr:nth-child(2n) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .dark #csv-preview-content a {
+            color: #007AFF;
+        }
+
+        .dark #csv-preview-content hr {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
