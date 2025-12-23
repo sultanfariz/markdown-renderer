@@ -154,26 +154,28 @@
         }
 
         /* Dark mode styles for rendered markdown content */
-        .dark #rendered-content {
+        /* Dark mode styles for markdown content */
+        .dark .markdown-content {
             color: #FFFFFF;
         }
 
-        .dark #rendered-content h1,
-        .dark #rendered-content h2,
-        .dark #rendered-content h3,
-        .dark #rendered-content h4,
-        .dark #rendered-content h5,
-        .dark #rendered-content h6 {
+        .dark .markdown-content h1,
+        .dark .markdown-content h2,
+        .dark .markdown-content h3,
+        .dark .markdown-content h4,
+        .dark .markdown-content h5,
+        .dark .markdown-content h6 {
             color: #FFFFFF;
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .dark #rendered-content code {
+        .dark .markdown-content code {
             background-color: rgba(255, 255, 255, 0.1);
             color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .dark #rendered-content pre {
+        .dark .markdown-content pre {
             background-color: #1e1e1e;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -230,42 +232,42 @@
             color: #569cd6;
         }
 
-        .dark #rendered-content blockquote {
+        .dark .markdown-content blockquote {
             border-left-color: rgba(255, 255, 255, 0.3);
             color: #8E8E93;
         }
 
-        .dark #rendered-content ul,
-        .dark #rendered-content ol {
+        .dark .markdown-content ul,
+        .dark .markdown-content ol {
             color: #FFFFFF;
         }
 
-        .dark #rendered-content li {
+        .dark .markdown-content li {
             color: #FFFFFF;
         }
 
-        .dark #rendered-content table th,
-        .dark #rendered-content table td {
+        .dark .markdown-content table th,
+        .dark .markdown-content table td {
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .dark #rendered-content table th {
+        .dark .markdown-content table th {
             background-color: rgba(255, 255, 255, 0.05);
         }
 
-        .dark #rendered-content table tr:nth-child(2n) {
+        .dark .markdown-content table tr:nth-child(2n) {
             background-color: rgba(255, 255, 255, 0.02);
         }
 
-        .dark #rendered-content a {
+        .dark .markdown-content a {
             color: #007AFF;
         }
 
-        .dark #rendered-content hr {
+        .dark .markdown-content hr {
             border-top-color: rgba(255, 255, 255, 0.2);
         }
 
-        .dark #rendered-content .toc {
+        .dark .markdown-content .toc {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.2);
         }
@@ -276,43 +278,44 @@
         }
 
         /* Markdown content styles */
-        #rendered-content h1,
-        #rendered-content h2,
-        #rendered-content h3,
-        #rendered-content h4,
-        #rendered-content h5,
-        #rendered-content h6 {
+        /* Shared styles for markdown content rendering */
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
             margin-top: 24px;
             margin-bottom: 16px;
             font-weight: 600;
             line-height: 1.25;
         }
 
-        #rendered-content h1 {
+        .markdown-content h1 {
             font-size: 2em;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 10px;
         }
 
-        #rendered-content h2 {
+        .markdown-content h2 {
             font-size: 1.5em;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             padding-bottom: 8px;
         }
 
-        #rendered-content h3 {
+        .markdown-content h3 {
             font-size: 1.25em;
         }
 
-        #rendered-content h4 {
+        .markdown-content h4 {
             font-size: 1em;
         }
 
-        #rendered-content p {
+        .markdown-content p {
             margin-bottom: 16px;
         }
 
-        #rendered-content code {
+        .markdown-content code {
             background-color: #f6f8fa;
             border-radius: 3px;
             font-size: 85%;
@@ -323,7 +326,7 @@
             border: 1px solid #e1e4e8;
         }
 
-        #rendered-content pre {
+        .markdown-content pre {
             background-color: #f6f8fa;
             border: 1px solid #e1e4e8;
             border-radius: 6px;
@@ -334,7 +337,7 @@
             margin-bottom: 16px;
         }
 
-        #rendered-content pre code {
+        .markdown-content pre code {
             background-color: transparent;
             border: 0;
             display: inline;
@@ -345,48 +348,48 @@
             padding: 0;
         }
 
-        #rendered-content blockquote {
+        .markdown-content blockquote {
             border-left: 4px solid rgba(0, 0, 0, 0.2);
             margin: 0;
             padding: 0 16px;
             color: #6a737d;
         }
 
-        #rendered-content ul,
-        #rendered-content ol {
+        .markdown-content ul,
+        .markdown-content ol {
             padding-left: 30px;
             margin-bottom: 16px;
         }
 
-        #rendered-content ul {
+        .markdown-content ul {
             list-style-type: disc;
             list-style-position: outside;
         }
 
-        #rendered-content ol {
+        .markdown-content ol {
             list-style-type: decimal;
             list-style-position: outside;
         }
 
-        #rendered-content ul ul {
+        .markdown-content ul ul {
             list-style-type: circle;
         }
 
-        #rendered-content ul ul ul {
+        .markdown-content ul ul ul {
             list-style-type: square;
         }
 
-        #rendered-content li {
+        .markdown-content li {
             margin-bottom: 4px;
             display: list-item;
         }
 
         /* Ensure task lists display properly */
-        #rendered-content li input[type="checkbox"] {
+        .markdown-content li input[type="checkbox"] {
             margin-right: 8px;
         }
 
-        #rendered-content table {
+        .markdown-content table {
             border-collapse: collapse;
             border-spacing: 0;
             margin-bottom: 16px;
@@ -395,38 +398,38 @@
             overflow: auto;
         }
 
-        #rendered-content table th,
-        #rendered-content table td {
+        .markdown-content table th,
+        .markdown-content table td {
             border: 1px solid rgba(0, 0, 0, 0.1);
             padding: 6px 13px;
             text-align: left;
         }
 
-        #rendered-content table th {
+        .markdown-content table th {
             background-color: rgba(0, 0, 0, 0.03);
             font-weight: 600;
         }
 
-        #rendered-content table tr:nth-child(2n) {
+        .markdown-content table tr:nth-child(2n) {
             background-color: rgba(0, 0, 0, 0.02);
         }
 
-        #rendered-content a {
+        .markdown-content a {
             color: #007AFF;
             text-decoration: none;
         }
 
-        #rendered-content a:hover {
+        .markdown-content a:hover {
             text-decoration: underline;
         }
 
-        #rendered-content hr {
+        .markdown-content hr {
             border: none;
             border-top: 1px solid rgba(0, 0, 0, 0.1);
             margin: 24px 0;
         }
 
-        #rendered-content .toc {
+        .markdown-content .toc {
             background: rgba(0, 0, 0, 0.03);
             border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 6px;
@@ -434,17 +437,17 @@
             margin-bottom: 24px;
         }
 
-        #rendered-content .toc h2 {
+        .markdown-content .toc h2 {
             margin-top: 0;
             border-bottom: none;
             font-size: 1.2em;
         }
 
-        #rendered-content .toc ul {
+        .markdown-content .toc ul {
             margin-bottom: 0;
         }
 
-        #rendered-content .toc li {
+        .markdown-content .toc li {
             margin-bottom: 2px;
         }
 
@@ -502,216 +505,7 @@
             animation: spin 1s linear infinite;
         }
 
-        /* CSV Preview Content Styling - Same as rendered-content */
-        #csv-preview-content h1,
-        #csv-preview-content h2,
-        #csv-preview-content h3,
-        #csv-preview-content h4,
-        #csv-preview-content h5,
-        #csv-preview-content h6 {
-            margin-top: 24px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            line-height: 1.25;
-        }
 
-        #csv-preview-content h1 {
-            font-size: 2em;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            padding-bottom: 10px;
-        }
-
-        #csv-preview-content h2 {
-            font-size: 1.5em;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            padding-bottom: 8px;
-        }
-
-        #csv-preview-content h3 {
-            font-size: 1.25em;
-        }
-
-        #csv-preview-content h4 {
-            font-size: 1em;
-        }
-
-        #csv-preview-content p {
-            margin-bottom: 16px;
-        }
-
-        #csv-preview-content code {
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            font-size: 85%;
-            margin: 0;
-            padding: 0.2em 0.4em;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            color: #24292e;
-            border: 1px solid #e1e4e8;
-        }
-
-        #csv-preview-content pre {
-            background-color: #f6f8fa;
-            border: 1px solid #e1e4e8;
-            border-radius: 6px;
-            font-size: 85%;
-            line-height: 1.45;
-            overflow: auto;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        #csv-preview-content pre code {
-            background-color: transparent;
-            border: 0;
-            display: inline;
-            line-height: inherit;
-            margin: 0;
-            max-width: auto;
-            overflow: visible;
-            padding: 0;
-        }
-
-        #csv-preview-content blockquote {
-            border-left: 4px solid rgba(0, 0, 0, 0.2);
-            margin: 0;
-            padding: 0 16px;
-            color: #6a737d;
-        }
-
-        #csv-preview-content ul,
-        #csv-preview-content ol {
-            padding-left: 30px;
-            margin-bottom: 16px;
-        }
-
-        #csv-preview-content ul {
-            list-style-type: disc;
-            list-style-position: outside;
-        }
-
-        #csv-preview-content ol {
-            list-style-type: decimal;
-            list-style-position: outside;
-        }
-
-        #csv-preview-content ul ul {
-            list-style-type: circle;
-        }
-
-        #csv-preview-content ul ul ul {
-            list-style-type: square;
-        }
-
-        #csv-preview-content li {
-            margin-bottom: 4px;
-            display: list-item;
-        }
-
-        #csv-preview-content li input[type="checkbox"] {
-            margin-right: 8px;
-        }
-
-        #csv-preview-content table {
-            border-collapse: collapse;
-            border-spacing: 0;
-            margin-bottom: 16px;
-            width: 100%;
-            display: block;
-            overflow: auto;
-        }
-
-        #csv-preview-content table th,
-        #csv-preview-content table td {
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            padding: 6px 13px;
-            text-align: left;
-        }
-
-        #csv-preview-content table th {
-            background-color: rgba(0, 0, 0, 0.03);
-            font-weight: 600;
-        }
-
-        #csv-preview-content table tr:nth-child(2n) {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        #csv-preview-content a {
-            color: #007AFF;
-            text-decoration: none;
-        }
-
-        #csv-preview-content a:hover {
-            text-decoration: underline;
-        }
-
-        #csv-preview-content hr {
-            border: none;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            margin: 24px 0;
-        }
-
-        /* Dark mode styles for CSV preview */
-        .dark #csv-preview-content {
-            color: #FFFFFF;
-        }
-
-        .dark #csv-preview-content h1,
-        .dark #csv-preview-content h2,
-        .dark #csv-preview-content h3,
-        .dark #csv-preview-content h4,
-        .dark #csv-preview-content h5,
-        .dark #csv-preview-content h6 {
-            color: #FFFFFF;
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .dark #csv-preview-content code {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #e6e6e6;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .dark #csv-preview-content pre {
-            background-color: #1e1e1e;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .dark #csv-preview-content blockquote {
-            border-left-color: rgba(255, 255, 255, 0.3);
-            color: #8E8E93;
-        }
-
-        .dark #csv-preview-content ul,
-        .dark #csv-preview-content ol {
-            color: #FFFFFF;
-        }
-
-        .dark #csv-preview-content li {
-            color: #FFFFFF;
-        }
-
-        .dark #csv-preview-content table th,
-        .dark #csv-preview-content table td {
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .dark #csv-preview-content table th {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .dark #csv-preview-content table tr:nth-child(2n) {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .dark #csv-preview-content a {
-            color: #007AFF;
-        }
-
-        .dark #csv-preview-content hr {
-            border-top-color: rgba(255, 255, 255, 0.2);
-        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
@@ -937,7 +731,7 @@ Use backslash to escape \*special\* characters.
             </div>
 
             <div class="mt-12">
-                <div id="rendered-content">
+                <div id="rendered-content" class="markdown-content">
                     <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
                 </div>
             </div>
@@ -981,7 +775,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
             <div id="preview-section" class="hidden mt-12">
                 <h2 class="text-xl font-semibold mb-4">Preview</h2>
-                <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4" id="csv-preview-content">
+                <div class="markdown-content bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4" id="csv-preview-content">
                 </div>
             </div>
             </div>
