@@ -1584,6 +1584,10 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         document.getElementById('clear-btn').addEventListener('click', clearContent);
         document.getElementById('share-btn').addEventListener('click', shareMarkdown);
 
+        // Get DOM elements for later use
+        const markdownInput = document.getElementById('markdown-input');
+        const renderedContent = document.getElementById('rendered-content');
+
         // Keyboard shortcut for rendering (Ctrl+Enter or Cmd+Enter)
         markdownInput.addEventListener('keydown', async function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -1597,8 +1601,6 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         const sidebarToggleText = document.getElementById('sidebar-toggle-text');
         const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
         const editorSidebar = document.getElementById('editor-sidebar');
-        const markdownInput = document.getElementById('markdown-input');
-        const renderedContent = document.getElementById('rendered-content');
 
         // Load sidebar state from localStorage
         let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
