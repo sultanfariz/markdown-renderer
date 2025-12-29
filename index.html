@@ -719,6 +719,8 @@
             max-width: 500px;
             min-width: 300px;
             transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
         }
 
         #editor-sidebar.collapsed {
@@ -732,22 +734,70 @@
 
         /* Ensure both panels maintain proper flex behavior */
         #renderer-page {
-            overflow: hidden;
+            overflow: visible;
         }
 
         #textarea-wrapper {
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-height: 0;
         }
 
         #markdown-input {
             width: 100%;
-            height: 100%;
+            flex: 1;
             resize: none;
+            font-size: 13px;
+            line-height: 1.5;
         }
 
         #rendered-content {
             width: 100%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #rendered-content h1,
+        #rendered-content h2,
+        #rendered-content h3,
+        #rendered-content h4,
+        #rendered-content h5,
+        #rendered-content h6 {
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+
+        #rendered-content h1 {
+            font-size: 1.75em;
+        }
+
+        #rendered-content h2 {
+            font-size: 1.4em;
+        }
+
+        #rendered-content h3 {
+            font-size: 1.15em;
+        }
+
+        #rendered-content p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        #rendered-content code {
+            font-size: 12px;
+        }
+
+        #rendered-content pre {
+            font-size: 12px;
+        }
+
+        #editor-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Responsive design for smaller screens */
@@ -813,7 +863,7 @@
                 </div>
             </header>
 
-            <div id="renderer-page" class="flex gap-4 h-[calc(100vh-300px)] -mx-4 -mb-4 px-4 pb-4">
+            <div id="renderer-page" class="flex gap-4 -mx-4 -mb-4 px-4 pb-4 min-h-[80vh]">
                 <!-- Left Sidebar: Markdown Editor -->
                 <div id="editor-sidebar" class="flex-shrink-0 w-96 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark transition-all duration-300 flex flex-col" style="min-width: 300px; max-width: 500px;">
                     <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
@@ -1554,49 +1604,42 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         sidebarToggleBtn.addEventListener('click', toggleSidebar);
 
         // Auto-scroll synchronization
-        let isSyncingScroll = false;
+        let syncLock = false;
 
         function syncScroll(sourceElement, targetElement) {
-            if (isSyncingScroll) return;
+            if (syncLock) return;
 
-            isSyncingScroll = true;
+            try {
+                syncLock = true;
 
-            const scrollTop = sourceElement.scrollTop;
-            const scrollHeight = sourceElement.scrollHeight;
-            const clientHeight = sourceElement.clientHeight;
+                const scrollTop = sourceElement.scrollTop;
+                const scrollHeight = sourceElement.scrollHeight - sourceElement.clientHeight;
 
-            // Calculate scroll percentage
-            const maxScroll = scrollHeight - clientHeight;
-            if (maxScroll > 0) {
-                const scrollPercentage = scrollTop / maxScroll;
+                // Avoid division by zero
+                if (scrollHeight <= 0) {
+                    return;
+                }
 
-                // Apply to target element
-                const targetMaxScroll = targetElement.scrollHeight - targetElement.clientHeight;
-                targetElement.scrollTop = scrollPercentage * targetMaxScroll;
+                // Calculate scroll percentage
+                const scrollPercentage = scrollTop / scrollHeight;
+
+                // Get target's scroll height
+                const targetScrollHeight = targetElement.scrollHeight - targetElement.clientHeight;
+
+                // Apply the same percentage to target
+                targetElement.scrollTop = scrollPercentage * targetScrollHeight;
+            } finally {
+                syncLock = false;
             }
-
-            // Allow syncing again after a short delay
-            setTimeout(() => {
-                isSyncingScroll = false;
-            }, 50);
         }
 
-        // Scroll event listeners with debouncing
-        let markdownScrollTimeout;
-        let renderedScrollTimeout;
-
+        // Scroll event listeners
         markdownInput.addEventListener('scroll', () => {
-            clearTimeout(markdownScrollTimeout);
-            markdownScrollTimeout = setTimeout(() => {
-                syncScroll(markdownInput, renderedContent);
-            }, 10);
+            syncScroll(markdownInput, renderedContent);
         });
 
         renderedContent.addEventListener('scroll', () => {
-            clearTimeout(renderedScrollTimeout);
-            renderedScrollTimeout = setTimeout(() => {
-                syncScroll(renderedContent, markdownInput);
-            }, 10);
+            syncScroll(renderedContent, markdownInput);
         });
 
         // Auto-render on page load
