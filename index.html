@@ -718,22 +718,54 @@
             width: 400px;
             max-width: 500px;
             min-width: 300px;
-            transition: width 0.3s ease-in-out, margin 0.3s ease-in-out;
+            transition: width 0.3s ease-in-out;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            position: relative;
         }
 
         #editor-sidebar.collapsed {
-            width: 0 !important;
-            max-width: 0 !important;
-            min-width: 0 !important;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 0 !important;
-            border: none;
-            overflow: hidden;
-            gap: 0;
+            width: 60px;
+            max-width: 60px;
+            min-width: 60px;
+        }
+
+        #editor-sidebar.collapsed #textarea-wrapper,
+        #editor-sidebar.collapsed .flex.gap-2 {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed > div:first-child {
+            padding: 8px;
+        }
+
+        #editor-sidebar.collapsed h2 {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed ~ #resize-handle {
+            display: none;
+        }
+
+        /* Draggable separator styling */
+        #resize-handle {
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            user-select: none;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        #resize-handle:hover,
+        #resize-handle.dragging {
+            background: #007AFF;
+        }
+
+        .dark #resize-handle:hover,
+        .dark #resize-handle.dragging {
+            background: #0A84FF;
         }
 
         /* Ensure both panels maintain proper flex behavior */
@@ -853,8 +885,15 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 min-width: 100% !important;
-                max-height: 60px;
-                overflow: hidden;
+                height: auto;
+            }
+
+            #editor-sidebar.collapsed > div:first-child {
+                padding: 8px 4px;
+            }
+
+            #resize-handle {
+                display: none;
             }
 
             #editor-content {
@@ -1082,6 +1121,9 @@ Use backslash to escape \*special\* characters.
                         </div>
                     </div>
                 </div>
+
+                <!-- Draggable resize handle -->
+                <div id="resize-handle"></div>
 
                 <!-- Right Panel: Rendered Output -->
                 <div id="editor-content" class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
@@ -1626,6 +1668,66 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         updateSidebarUI();
 
         sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+        // Resizable panels with draggable separator
+        const resizeHandle = document.getElementById('resize-handle');
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        // Load saved sidebar width from localStorage
+        function loadSidebarWidth() {
+            const savedWidth = localStorage.getItem('sidebarWidth');
+            if (savedWidth && !sidebarCollapsed) {
+                const width = parseInt(savedWidth);
+                if (width >= 300 && width <= 600) {
+                    editorSidebar.style.width = width + 'px';
+                    editorSidebar.style.maxWidth = width + 'px';
+                    editorSidebar.style.minWidth = width + 'px';
+                }
+            }
+        }
+
+        // Initialize sidebar width on load
+        loadSidebarWidth();
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            if (sidebarCollapsed) return;
+
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = editorSidebar.offsetWidth;
+            resizeHandle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const diff = e.clientX - startX;
+            const newWidth = startWidth + diff;
+
+            // Constrain width between min and max
+            if (newWidth >= 300 && newWidth <= 600) {
+                editorSidebar.style.width = newWidth + 'px';
+                editorSidebar.style.maxWidth = newWidth + 'px';
+                editorSidebar.style.minWidth = newWidth + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+
+            isResizing = false;
+            resizeHandle.classList.remove('dragging');
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+
+            // Save sidebar width to localStorage
+            localStorage.setItem('sidebarWidth', editorSidebar.offsetWidth);
+        });
 
         // Auto-scroll synchronization
         let syncLock = false;
