@@ -726,22 +726,28 @@
         }
 
         #editor-sidebar.collapsed {
-            width: 60px;
-            max-width: 60px;
-            min-width: 60px;
+            width: 120px;
+            max-width: 120px;
+            min-width: 120px;
         }
 
-        #editor-sidebar.collapsed #textarea-wrapper,
+        #editor-sidebar.collapsed #textarea-wrapper {
+            display: none;
+        }
+
         #editor-sidebar.collapsed .flex.gap-2 {
             display: none;
         }
 
         #editor-sidebar.collapsed > div:first-child {
-            padding: 8px;
+            padding: 12px;
+            white-space: nowrap;
         }
 
         #editor-sidebar.collapsed h2 {
-            display: none;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         #editor-sidebar.collapsed ~ #resize-handle {
@@ -844,35 +850,34 @@
             #editor-sidebar {
                 width: 350px;
                 max-width: 350px;
-            }
-
-            #editor-sidebar.collapsed {
-                max-width: 0 !important;
+                min-width: 120px;
             }
 
             #renderer-page {
                 gap: 0.5rem;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
             }
         }
 
         @media (max-width: 768px) {
             #editor-sidebar {
                 width: 45vw;
-                min-width: 200px;
+                min-width: 120px;
                 max-width: 60vw;
             }
 
-            #editor-sidebar.collapsed {
-                max-width: 0 !important;
+            #renderer-page {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
             }
         }
 
         @media (max-width: 640px) {
             #renderer-page {
-                height: auto;
                 flex-direction: column;
                 gap: 1rem;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
             }
 
             #editor-sidebar {
@@ -882,10 +887,9 @@
             }
 
             #editor-sidebar.collapsed {
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 100% !important;
-                height: auto;
+                width: 100%;
+                max-width: 100%;
+                min-width: 100%;
             }
 
             #editor-sidebar.collapsed > div:first-child {
@@ -898,7 +902,6 @@
 
             #editor-content {
                 width: 100%;
-                flex-basis: 100%;
             }
         }
     </style>
