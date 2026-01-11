@@ -2484,7 +2484,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         async function callAI(prompt, options = {}) {
             try {
                 const response = await puter.ai.chat(prompt, {
-                    model: options.model || "z-ai/glm-4.5-air",
+                    model: options.model || "z-ai/glm-4.7",
                     ...options
                 });
                 return { success: true, data: response };
@@ -2831,7 +2831,7 @@ Provide a helpful, accurate answer based on the document content. Keep your resp
 
         // Initialize AI features on page load
         window.addEventListener('load', function() {
-            console.log('AI features loaded! Powered by Puter.js & GLM-4.5-Air');
+            console.log('AI features loaded! Powered by Puter.js & GLM-4.7');
 
             // Update chat context if there's initial content
             const markdownInput = document.getElementById('markdown-input');
