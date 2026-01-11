@@ -52,7 +52,10 @@
 
     <!-- Pako for gzip compression (60-75% reduction) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    
+
+    <!-- Puter.js for AI capabilities -->
+    <script src="https://js.puter.com/v2/"></script>
+
     <style>
         .glass-effect {
             backdrop-filter: blur(20px);
@@ -712,6 +715,562 @@
         .dark #csv-preview-content hr {
             border-top-color: rgba(255, 255, 255, 0.2);
         }
+
+        /* Sidebar styling and animations */
+        #editor-sidebar {
+            width: 400px;
+            max-width: 500px;
+            min-width: 300px;
+            transition: width 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        #editor-sidebar.collapsed {
+            width: 120px;
+            max-width: 120px;
+            min-width: 120px;
+        }
+
+        #editor-sidebar.collapsed #textarea-wrapper {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed .flex.gap-2 {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed > div:first-child {
+            padding: 12px;
+            white-space: nowrap;
+        }
+
+        #editor-sidebar.collapsed h2 {
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #editor-sidebar.collapsed ~ #resize-handle {
+            display: none;
+        }
+
+        /* Draggable separator styling */
+        #resize-handle {
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            user-select: none;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        #resize-handle:hover,
+        #resize-handle.dragging {
+            background: #007AFF;
+        }
+
+        .dark #resize-handle:hover,
+        .dark #resize-handle.dragging {
+            background: #0A84FF;
+        }
+
+        /* Ensure both panels maintain proper flex behavior */
+        #renderer-page {
+            display: flex;
+            flex-direction: row;
+            overflow: visible;
+            flex-wrap: nowrap;
+        }
+
+        #textarea-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #markdown-input {
+            width: 100%;
+            flex: 1;
+            resize: none;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        #rendered-content {
+            width: 100%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #rendered-content h1,
+        #rendered-content h2,
+        #rendered-content h3,
+        #rendered-content h4,
+        #rendered-content h5,
+        #rendered-content h6 {
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+
+        #rendered-content h1 {
+            font-size: 1.75em;
+        }
+
+        #rendered-content h2 {
+            font-size: 1.4em;
+        }
+
+        #rendered-content h3 {
+            font-size: 1.15em;
+        }
+
+        #rendered-content p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        #rendered-content code {
+            font-size: 12px;
+        }
+
+        #rendered-content pre {
+            font-size: 12px;
+        }
+
+        #editor-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Responsive design for smaller screens */
+        @media (max-width: 1024px) {
+            #editor-sidebar {
+                width: 350px;
+                max-width: 350px;
+                min-width: 120px;
+            }
+
+            #renderer-page {
+                gap: 0.5rem;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #editor-sidebar {
+                width: 45vw;
+                min-width: 120px;
+                max-width: 60vw;
+            }
+
+            #renderer-page {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #renderer-page {
+                flex-direction: column;
+                gap: 1rem;
+                flex-wrap: nowrap;
+            }
+
+            #editor-sidebar {
+                width: 100%;
+                max-width: 100%;
+                min-width: 100%;
+            }
+
+            #editor-sidebar.collapsed {
+                width: 100%;
+                max-width: 100%;
+                min-width: 100%;
+            }
+
+            #editor-sidebar.collapsed > div:first-child {
+                padding: 8px 4px;
+            }
+
+            #resize-handle {
+                display: none;
+            }
+
+            #editor-content {
+                width: 100%;
+            }
+        }
+
+        /* AI Features Styles */
+
+        /* Summary Panel */
+        .summary-panel {
+            margin-top: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .summary-panel.show {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .summary-section {
+            padding: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .summary-section {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .summary-section:last-child {
+            border-bottom: none;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key-points {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .key-points li {
+            padding-left: 24px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .key-points li:before {
+            content: "▪";
+            position: absolute;
+            left: 8px;
+            color: #007AFF;
+            font-weight: bold;
+        }
+
+        /* Chat UI Styles */
+        .floating-chat-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-chat-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.5);
+        }
+
+        .floating-chat-btn .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #FF3B30;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        .chat-container {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-out;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dark .chat-container {
+            background: rgba(28, 28, 30, 0.95);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-container.open {
+            right: 0;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dark .chat-header {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: messageSlideIn 0.2s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user {
+            align-items: flex-end;
+        }
+
+        .chat-message.user .message-bubble {
+            background: #007AFF;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.assistant {
+            align-items: flex-start;
+        }
+
+        .chat-message.assistant .message-bubble {
+            background: rgba(0, 0, 0, 0.05);
+            color: #000000;
+            border-bottom-left-radius: 4px;
+        }
+
+        .dark .chat-message.assistant .message-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            padding: 0 8px;
+        }
+
+        .chat-input-container {
+            padding: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .dark .chat-input-container {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.03);
+            resize: none;
+            font-family: inherit;
+            max-height: 120px;
+            min-height: 44px;
+        }
+
+        .dark .chat-input {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #007AFF;
+        }
+
+        .chat-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #007AFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover:not(:disabled) {
+            background: #0051D5;
+            transform: scale(1.05);
+        }
+
+        .chat-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #007AFF;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .suggested-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 0;
+        }
+
+        .suggested-question {
+            padding: 10px 14px;
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 12px;
+            color: #007AFF;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .suggested-question:hover {
+            background: rgba(0, 122, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        .dark .suggested-question {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+
+        /* Loading spinner for AI */
+        .ai-loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Context indicator */
+        .context-info {
+            padding: 8px 12px;
+            background: rgba(0, 122, 255, 0.1);
+            border-left: 3px solid #007AFF;
+            margin-bottom: 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .dark .context-info {
+            background: rgba(0, 122, 255, 0.15);
+        }
+
+        /* Responsive adjustments for chat */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                right: -100%;
+            }
+
+            .floating-chat-btn {
+                bottom: 16px;
+                right: 16px;
+            }
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
@@ -735,17 +1294,18 @@
                 </div>
             </header>
 
-            <div id="renderer-page" class="block">
-            <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark" id="editor-container">
-                <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
-                    <h2 class="text-lg font-semibold">Markdown Input</h2>
-                    <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="collapse-btn">
-                        <span id="collapse-text">Collapse</span>
-                        <span class="material-icons-outlined ml-1" id="collapse-icon">expand_less</span>
-                    </button>
-                </div>
-                <div id="textarea-wrapper">
-                    <textarea class="w-full h-64 p-4 bg-transparent border-0 focus:ring-0 resize-y font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="markdown-input" placeholder="Enter your markdown here..."># Markdown Syntax Guide
+            <div id="renderer-page" class="flex gap-4 -mx-4 -mb-4 px-4 pb-4 min-h-[80vh]">
+                <!-- Left Sidebar: Markdown Editor -->
+                <div id="editor-sidebar" class="w-96 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark transition-all duration-300 flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+                        <h2 class="text-lg font-semibold">Markdown Input</h2>
+                        <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="sidebar-toggle-btn" title="Collapse sidebar">
+                            <span id="sidebar-toggle-text">Collapse</span>
+                            <span class="material-icons-outlined ml-1" id="sidebar-toggle-icon">chevron_left</span>
+                        </button>
+                    </div>
+                    <div id="textarea-wrapper" class="flex-1 overflow-y-auto">
+                        <textarea class="w-full h-full p-4 bg-transparent border-0 focus:ring-0 resize-none font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="markdown-input" placeholder="Enter your markdown here..."># Markdown Syntax Guide
 
 ## Table of Contents
 - [Headers](#headers)
@@ -919,28 +1479,66 @@ to create a line break.
 Use backslash to escape \*special\* characters.
 
 **Try editing this content and click "Render Markdown" to see the results!**</textarea>
-                    <div class="flex justify-center py-2 border-t border-border-light dark:border-border-dark">
-                        <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="collapse-btn-bottom">
-                            <span id="collapse-text-bottom">Collapse</span>
-                            <span class="material-icons-outlined ml-1" id="collapse-icon-bottom">expand_less</span>
+                    </div>
+                    <div class="flex flex-col gap-2 p-4 border-t border-border-light dark:border-border-dark bg-opacity-50">
+                        <button class="w-full px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
+                        <button class="w-full px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="summarize-btn">
+                            <span class="material-icons-outlined text-sm">auto_awesome</span>
+                            <span>Summarize</span>
                         </button>
+                        <div class="flex gap-2">
+                            <button class="flex-1 px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-btn">Clear</button>
+                            <button class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="share-btn">
+                                <span class="material-icons-outlined text-sm">share</span>
+                                <span>Share</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col sm:flex-row items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
-                    <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
-                    <button class="flex-1 sm:flex-none px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-btn">Clear</button>
-                    <button class="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="share-btn">
-                        <span class="material-icons-outlined text-sm">share</span>
-                        <span>Share</span>
-                    </button>
-                </div>
-            </div>
 
-            <div class="mt-12">
-                <div id="rendered-content">
-                    <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The tech plan document is loaded above. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+                <!-- Draggable resize handle -->
+                <div id="resize-handle"></div>
+
+                <!-- Right Panel: Rendered Output -->
+                <div id="editor-content" class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+                        <h2 class="text-lg font-semibold">Rendered Output</h2>
+                    </div>
+                    <div id="rendered-content" class="flex-1 overflow-y-auto p-6">
+                        <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The markdown content is loaded on the left. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+
+                        <!-- AI Summary Panel -->
+                        <div id="summary-panel" class="summary-panel bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark">
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">summarize</span>
+                                    <span>AI Summary</span>
+                                </div>
+                                <div id="summary-content" class="text-text-light dark:text-text-dark"></div>
+                            </div>
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">list</span>
+                                    <span>Key Points</span>
+                                </div>
+                                <ul id="key-points" class="key-points text-text-light dark:text-text-dark"></ul>
+                            </div>
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">schedule</span>
+                                    <span>Reading Time</span>
+                                </div>
+                                <div id="reading-time" class="text-text-light dark:text-text-dark"></div>
+                            </div>
+                            <div class="summary-section" style="border-bottom: none; padding-top: 12px;">
+                                <button class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-all duration-300 flex items-center gap-2" id="copy-summary-btn">
+                                    <span class="material-icons-outlined text-sm">content_copy</span>
+                                    <span>Copy Summary</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
             </div>
 
             <div id="csv-page" class="hidden">
@@ -986,6 +1584,64 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             </div>
             </div>
         </main>
+    </div>
+
+    <!-- AI Chat Interface -->
+    <!-- Floating Chat Button -->
+    <button class="floating-chat-btn" id="floating-chat-btn" title="Ask AI about the document">
+        <span class="material-icons-outlined">chat</span>
+        <span class="badge" id="chat-badge" style="display: none;">AI</span>
+    </button>
+
+    <!-- Chat Panel -->
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            <div class="chat-title">
+                <span class="material-icons-outlined">smart_toy</span>
+                <span>Document Assistant</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="p-2 hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded-lg transition" id="clear-chat-btn" title="Clear conversation">
+                    <span class="material-icons-outlined text-lg">delete_outline</span>
+                </button>
+                <button class="p-2 hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded-lg transition" id="close-chat-btn" title="Close chat">
+                    <span class="material-icons-outlined text-lg">close</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <!-- Context Info -->
+            <div class="context-info" id="context-info">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">info</span>
+                    <strong>Document loaded</strong>
+                </div>
+                <div id="doc-stats">Ready to answer questions about your document</div>
+            </div>
+
+            <!-- Suggested Questions -->
+            <div class="suggested-questions" id="suggested-questions">
+                <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 4px;">Try asking:</div>
+                <button class="suggested-question" data-question="Summarize the main points of this document">Summarize the main points of this document</button>
+                <button class="suggested-question" data-question="What are the key takeaways?">What are the key takeaways?</button>
+                <button class="suggested-question" data-question="Explain the most important section">Explain the most important section</button>
+            </div>
+
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <div class="chat-input-container">
+            <textarea
+                class="chat-input"
+                id="chat-input"
+                placeholder="Ask a question about the document..."
+                rows="1"
+            ></textarea>
+            <button class="chat-send-btn" id="chat-send-btn">
+                <span class="material-icons-outlined">send</span>
+            </button>
+        </div>
     </div>
 
     <script>
@@ -1431,50 +2087,147 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         document.getElementById('render-btn').addEventListener('click', renderMarkdown);
         document.getElementById('clear-btn').addEventListener('click', clearContent);
         document.getElementById('share-btn').addEventListener('click', shareMarkdown);
-        
-        // Auto-resize textarea
-        const textarea = document.getElementById('markdown-input');
-        textarea.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.max(200, this.scrollHeight) + 'px';
-        });
-        
+
+        // Get DOM elements for later use
+        const markdownInput = document.getElementById('markdown-input');
+        const renderedContent = document.getElementById('rendered-content');
+
         // Keyboard shortcut for rendering (Ctrl+Enter or Cmd+Enter)
-        textarea.addEventListener('keydown', async function(e) {
+        markdownInput.addEventListener('keydown', async function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 await renderMarkdown();
             }
         });
 
-        // Toggle input section
-        const collapseBtn = document.getElementById('collapse-btn');
-        const collapseBtnBottom = document.getElementById('collapse-btn-bottom');
-        const textareaWrapper = document.getElementById('textarea-wrapper');
-        const collapseText = document.getElementById('collapse-text');
-        const collapseIcon = document.getElementById('collapse-icon');
-        const collapseTextBottom = document.getElementById('collapse-text-bottom');
-        const collapseIconBottom = document.getElementById('collapse-icon-bottom');
+        // Sidebar toggle functionality
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+        const sidebarToggleText = document.getElementById('sidebar-toggle-text');
+        const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+        const editorSidebar = document.getElementById('editor-sidebar');
 
-        function toggleTextarea() {
-            const isCollapsed = textareaWrapper.style.display === 'none';
-            if (isCollapsed) {
-                textareaWrapper.style.display = 'block';
-                collapseText.textContent = 'Collapse';
-                collapseIcon.textContent = 'expand_less';
-                collapseTextBottom.textContent = 'Collapse';
-                collapseIconBottom.textContent = 'expand_less';
+        // Load sidebar state from localStorage
+        let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        function updateSidebarUI() {
+            if (sidebarCollapsed) {
+                editorSidebar.classList.add('collapsed');
+                sidebarToggleText.textContent = 'Expand';
+                sidebarToggleIcon.textContent = 'chevron_right';
             } else {
-                textareaWrapper.style.display = 'none';
-                collapseText.textContent = 'Expand';
-                collapseIcon.textContent = 'expand_more';
-                collapseTextBottom.textContent = 'Expand';
-                collapseIconBottom.textContent = 'expand_more';
+                editorSidebar.classList.remove('collapsed');
+                sidebarToggleText.textContent = 'Collapse';
+                sidebarToggleIcon.textContent = 'chevron_left';
             }
         }
 
-        collapseBtn.addEventListener('click', toggleTextarea);
-        collapseBtnBottom.addEventListener('click', toggleTextarea);
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+            updateSidebarUI();
+        }
+
+        // Initialize sidebar state
+        updateSidebarUI();
+
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+        // Resizable panels with draggable separator
+        const resizeHandle = document.getElementById('resize-handle');
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        // Load saved sidebar width from localStorage
+        function loadSidebarWidth() {
+            const savedWidth = localStorage.getItem('sidebarWidth');
+            if (savedWidth && !sidebarCollapsed) {
+                const width = parseInt(savedWidth);
+                if (width >= 300 && width <= 600) {
+                    editorSidebar.style.width = width + 'px';
+                }
+            }
+        }
+
+        // Initialize sidebar width on load
+        loadSidebarWidth();
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            if (sidebarCollapsed) return;
+
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = editorSidebar.offsetWidth;
+            resizeHandle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const diff = e.clientX - startX;
+            const newWidth = startWidth + diff;
+
+            // Constrain width between min and max
+            if (newWidth >= 300 && newWidth <= 600) {
+                editorSidebar.style.width = newWidth + 'px';
+                editorSidebar.style.maxWidth = newWidth + 'px';
+                editorSidebar.style.minWidth = newWidth + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+
+            isResizing = false;
+            resizeHandle.classList.remove('dragging');
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+
+            // Save sidebar width to localStorage
+            localStorage.setItem('sidebarWidth', editorSidebar.offsetWidth);
+        });
+
+        // Auto-scroll synchronization
+        let syncLock = false;
+
+        function syncScroll(sourceElement, targetElement) {
+            if (syncLock) return;
+
+            try {
+                syncLock = true;
+
+                const scrollTop = sourceElement.scrollTop;
+                const scrollHeight = sourceElement.scrollHeight - sourceElement.clientHeight;
+
+                // Avoid division by zero
+                if (scrollHeight <= 0) {
+                    return;
+                }
+
+                // Calculate scroll percentage
+                const scrollPercentage = scrollTop / scrollHeight;
+
+                // Get target's scroll height
+                const targetScrollHeight = targetElement.scrollHeight - targetElement.clientHeight;
+
+                // Apply the same percentage to target
+                targetElement.scrollTop = scrollPercentage * targetScrollHeight;
+            } finally {
+                syncLock = false;
+            }
+        }
+
+        // Scroll event listeners
+        markdownInput.addEventListener('scroll', () => {
+            syncScroll(markdownInput, renderedContent);
+        });
+
+        renderedContent.addEventListener('scroll', () => {
+            syncScroll(renderedContent, markdownInput);
+        });
 
         // Auto-render on page load
         window.addEventListener('load', function() {
@@ -1706,13 +2459,386 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 const originalText = button.textContent;
                 button.textContent = message;
                 button.style.backgroundColor = color;
-                
+
                 setTimeout(() => {
                     button.textContent = originalText;
                     button.style.backgroundColor = '#0969da';
                 }, 2000);
             }
         }
+
+        // ========================================
+        // AI FEATURES - Document Summarization & Chat
+        // ========================================
+
+        // AI State Management
+        const AIState = {
+            currentMarkdown: '',
+            summary: null,
+            chatHistory: [],
+            isChatOpen: false,
+            isProcessing: false
+        };
+
+        // AI Helper - Call Puter.js GLM API
+        async function callAI(prompt, options = {}) {
+            try {
+                const response = await puter.ai.chat(prompt, {
+                    model: options.model || "z-ai/glm-4-air",
+                    ...options
+                });
+                return { success: true, data: response };
+            } catch (error) {
+                console.error('AI API Error:', error);
+                return {
+                    success: false,
+                    error: error.message || 'Failed to connect to AI service. Please try again.'
+                };
+            }
+        }
+
+        // Calculate reading time
+        function calculateReadingTime(text) {
+            const wordsPerMinute = 200;
+            const words = text.trim().split(/\s+/).length;
+            const minutes = Math.ceil(words / wordsPerMinute);
+            return `${minutes} min read (${words} words)`;
+        }
+
+        // Parse AI response for summary
+        function parseSummaryResponse(response) {
+            const lines = response.split('\n').filter(line => line.trim());
+
+            // Try to extract structured content
+            let summary = '';
+            let keyPoints = [];
+
+            let currentSection = 'summary';
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                // Check for key points section
+                if (trimmed.match(/^(key points|main points|highlights)/i)) {
+                    currentSection = 'points';
+                    continue;
+                }
+
+                // Extract bullet points
+                if (trimmed.match(/^[-*•▪]\s/) || trimmed.match(/^\d+\.\s/)) {
+                    const point = trimmed.replace(/^[-*•▪]\s/, '').replace(/^\d+\.\s/, '');
+                    if (point.length > 10) {
+                        keyPoints.push(point);
+                    }
+                } else if (currentSection === 'summary' && trimmed.length > 20) {
+                    summary += trimmed + ' ';
+                }
+            }
+
+            // If no structured content found, use the whole response
+            if (!summary && keyPoints.length === 0) {
+                const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                summary = sentences.slice(0, 3).join('. ') + '.';
+                keyPoints = sentences.slice(3, 8).map(s => s.trim());
+            }
+
+            return {
+                summary: summary.trim() || response.substring(0, 300),
+                keyPoints: keyPoints.length > 0 ? keyPoints : ['Summary generated successfully']
+            };
+        }
+
+        // SUMMARIZATION FEATURE
+        const summarizeBtn = document.getElementById('summarize-btn');
+        const summaryPanel = document.getElementById('summary-panel');
+        const summaryContent = document.getElementById('summary-content');
+        const keyPointsList = document.getElementById('key-points');
+        const readingTime = document.getElementById('reading-time');
+        const copySummaryBtn = document.getElementById('copy-summary-btn');
+
+        summarizeBtn.addEventListener('click', async function() {
+            const markdownInput = document.getElementById('markdown-input').value;
+
+            if (!markdownInput.trim()) {
+                alert('Please enter some markdown content first!');
+                return;
+            }
+
+            // Show loading state
+            const originalHTML = summarizeBtn.innerHTML;
+            summarizeBtn.innerHTML = '<span class="ai-loading"></span><span style="margin-left: 8px;">Summarizing...</span>';
+            summarizeBtn.disabled = true;
+
+            try {
+                AIState.currentMarkdown = markdownInput;
+
+                // Call AI to summarize
+                const prompt = `Please analyze and summarize the following markdown document. Provide:
+
+1. A concise summary (2-3 sentences capturing the main idea)
+2. Key points (5-7 important bullet points)
+
+Markdown content:
+${markdownInput.substring(0, 8000)}`;
+
+                const result = await callAI(prompt);
+
+                if (result.success) {
+                    const parsed = parseSummaryResponse(result.data);
+                    AIState.summary = parsed;
+
+                    // Update UI
+                    summaryContent.textContent = parsed.summary;
+
+                    keyPointsList.innerHTML = '';
+                    parsed.keyPoints.forEach(point => {
+                        const li = document.createElement('li');
+                        li.textContent = point;
+                        keyPointsList.appendChild(li);
+                    });
+
+                    readingTime.textContent = calculateReadingTime(markdownInput);
+
+                    // Show panel
+                    summaryPanel.classList.add('show');
+
+                    // Scroll to summary
+                    setTimeout(() => {
+                        summaryPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+
+                } else {
+                    alert('Error: ' + result.error);
+                }
+
+            } catch (error) {
+                console.error('Summarization error:', error);
+                alert('Failed to generate summary. Please try again.');
+            } finally {
+                summarizeBtn.innerHTML = originalHTML;
+                summarizeBtn.disabled = false;
+            }
+        });
+
+        // Copy summary to clipboard
+        copySummaryBtn.addEventListener('click', function() {
+            if (!AIState.summary) return;
+
+            const text = `Summary:\n${AIState.summary.summary}\n\nKey Points:\n${AIState.summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = copySummaryBtn.innerHTML;
+                copySummaryBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
+
+                setTimeout(() => {
+                    copySummaryBtn.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        });
+
+        // CHAT FEATURE
+        const floatingChatBtn = document.getElementById('floating-chat-btn');
+        const chatContainer = document.getElementById('chat-container');
+        const closeChatBtn = document.getElementById('close-chat-btn');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const docStats = document.getElementById('doc-stats');
+
+        // Toggle chat
+        floatingChatBtn.addEventListener('click', function() {
+            AIState.isChatOpen = !AIState.isChatOpen;
+            chatContainer.classList.toggle('open');
+
+            // Update context on open
+            if (AIState.isChatOpen) {
+                updateChatContext();
+                chatInput.focus();
+            }
+        });
+
+        closeChatBtn.addEventListener('click', function() {
+            AIState.isChatOpen = false;
+            chatContainer.classList.remove('open');
+        });
+
+        // Update chat context
+        function updateChatContext() {
+            const markdownInput = document.getElementById('markdown-input').value;
+            if (markdownInput.trim()) {
+                AIState.currentMarkdown = markdownInput;
+                const words = markdownInput.trim().split(/\s+/).length;
+                docStats.textContent = `${words} words loaded • Ready for questions`;
+            } else {
+                docStats.textContent = 'No document loaded';
+            }
+        }
+
+        // Clear chat
+        clearChatBtn.addEventListener('click', function() {
+            if (confirm('Clear all messages?')) {
+                AIState.chatHistory = [];
+
+                // Remove all message elements except context and suggestions
+                const messages = chatMessages.querySelectorAll('.chat-message');
+                messages.forEach(msg => msg.remove());
+
+                // Show suggested questions again
+                document.getElementById('suggested-questions').style.display = 'flex';
+            }
+        });
+
+        // Add message to chat
+        function addChatMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+
+            chatMessages.appendChild(messageDiv);
+
+            // Auto scroll
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'chat-message assistant';
+            typing.id = 'typing-indicator-msg';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator message-bubble';
+            indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+            typing.appendChild(indicator);
+            chatMessages.appendChild(typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typing = document.getElementById('typing-indicator-msg');
+            if (typing) typing.remove();
+        }
+
+        // Send chat message
+        async function sendChatMessage(question) {
+            if (!question.trim()) return;
+
+            // Update context
+            const markdownInput = document.getElementById('markdown-input').value;
+            if (!markdownInput.trim()) {
+                alert('Please load a document first!');
+                return;
+            }
+
+            AIState.currentMarkdown = markdownInput;
+
+            // Hide suggested questions
+            document.getElementById('suggested-questions').style.display = 'none';
+
+            // Add user message
+            addChatMessage('user', question);
+
+            // Clear input
+            chatInput.value = '';
+            chatSendBtn.disabled = true;
+
+            // Show typing
+            showTypingIndicator();
+
+            try {
+                // Build context-aware prompt
+                const prompt = `You are analyzing the following markdown document:
+
+${AIState.currentMarkdown.substring(0, 10000)}
+
+User question: ${question}
+
+Provide a helpful, accurate answer based on the document content. Keep your response concise and relevant.`;
+
+                const result = await callAI(prompt);
+
+                hideTypingIndicator();
+
+                if (result.success) {
+                    addChatMessage('assistant', result.data);
+
+                    AIState.chatHistory.push({
+                        role: 'user',
+                        content: question,
+                        timestamp: new Date()
+                    });
+                    AIState.chatHistory.push({
+                        role: 'assistant',
+                        content: result.data,
+                        timestamp: new Date()
+                    });
+                } else {
+                    addChatMessage('assistant', '❌ ' + result.error);
+                }
+
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Chat error:', error);
+                addChatMessage('assistant', '❌ Failed to get response. Please try again.');
+            } finally {
+                chatSendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        // Chat send button
+        chatSendBtn.addEventListener('click', function() {
+            sendChatMessage(chatInput.value);
+        });
+
+        // Chat input enter key
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage(chatInput.value);
+            }
+        });
+
+        // Auto-resize chat input
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Suggested questions
+        document.querySelectorAll('.suggested-question').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const question = this.dataset.question;
+                chatInput.value = question;
+                sendChatMessage(question);
+            });
+        });
+
+        // Initialize AI features on page load
+        window.addEventListener('load', function() {
+            console.log('AI features loaded! Powered by Puter.js & GLM-4-Air');
+
+            // Update chat context if there's initial content
+            const markdownInput = document.getElementById('markdown-input');
+            if (markdownInput.value.trim()) {
+                updateChatContext();
+            }
+        });
     </script>
 </body>
 </html>
