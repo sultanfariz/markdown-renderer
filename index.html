@@ -2483,39 +2483,85 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         // AI Helper - Call Puter.js GLM API
         async function callAI(prompt, options = {}) {
             try {
+                console.log('=== CALLING AI API ===');
+                console.log('Model:', options.model || "z-ai/glm-4.7");
+
                 const response = await puter.ai.chat(prompt, {
                     model: options.model || "z-ai/glm-4.7",
                     ...options
                 });
 
                 // Log the raw response for debugging
-                console.log('AI API Raw Response:', response);
+                console.log('=== AI API RAW RESPONSE ===');
+                console.log('Full response:', response);
                 console.log('Response type:', typeof response);
-                console.log('Response keys:', response ? Object.keys(response) : 'null');
+
+                // Try to stringify to see structure
+                try {
+                    console.log('Response JSON:', JSON.stringify(response, null, 2));
+                } catch (e) {
+                    console.log('Cannot stringify response:', e);
+                }
+
+                if (response && typeof response === 'object') {
+                    console.log('Response keys:', Object.keys(response));
+                    console.log('Response values:', Object.values(response));
+                }
 
                 // Extract text from response - handle both string and object responses
                 let text = response;
-                if (typeof response === 'object' && response !== null) {
-                    // Try different possible properties
-                    text = response.message || response.content || response.text || response.response || response.answer;
 
-                    // If still an object, try to get the first string value
-                    if (typeof text === 'object' && text !== null) {
+                // If it's already a string, use it
+                if (typeof response === 'string') {
+                    text = response;
+                    console.log('Response is already a string:', text);
+                }
+                // If it's an object, extract the text
+                else if (typeof response === 'object' && response !== null) {
+                    console.log('Attempting to extract text from object...');
+
+                    // Try different possible properties
+                    text = response.message
+                        || response.content
+                        || response.text
+                        || response.response
+                        || response.answer
+                        || response.output
+                        || response.result;
+
+                    console.log('After property check, text is:', text, 'Type:', typeof text);
+
+                    // If still an object or undefined, try to get the first string value
+                    if (!text || (typeof text === 'object' && text !== null)) {
+                        console.log('Still not a string, searching object values...');
                         const values = Object.values(response);
-                        text = values.find(v => typeof v === 'string') || JSON.stringify(response);
+                        text = values.find(v => typeof v === 'string');
+                        console.log('Found string in values:', text);
+                    }
+
+                    // Last resort: stringify
+                    if (!text || typeof text !== 'string') {
+                        console.log('Last resort: stringifying object');
+                        text = JSON.stringify(response);
                     }
                 }
 
                 // Ensure we have a string
                 if (typeof text !== 'string') {
+                    console.log('Converting to string, current type:', typeof text);
                     text = String(text);
                 }
 
-                console.log('Extracted text:', text);
+                console.log('=== FINAL EXTRACTED TEXT ===');
+                console.log(text);
+                console.log('========================');
 
                 return { success: true, data: text };
             } catch (error) {
-                console.error('AI API Error:', error);
+                console.error('=== AI API ERROR ===');
+                console.error('Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 return {
                     success: false,
                     error: error.message || 'Failed to connect to AI service. Please try again.'
