@@ -1,0 +1,2928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Renderer & CSV Converter</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#007AFF",
+                        "background-light": "#F9F9F9",
+                        "background-dark": "#1C1C1E",
+                        "surface-light": "rgba(255, 255, 255, 0.8)",
+                        "surface-dark": "rgba(44, 44, 46, 0.7)",
+                        "text-light": "#000000",
+                        "text-dark": "#FFFFFF",
+                        "secondary-text-light": "#6b7280",
+                        "secondary-text-dark": "#8E8E93",
+                        "border-light": "rgba(0, 0, 0, 0.1)",
+                        "border-dark": "rgba(255, 255, 255, 0.2)",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+
+    <!-- Mermaid.js for diagrams -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <!-- Pako for gzip compression (60-75% reduction) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+    <!-- Puter.js for AI capabilities -->
+    <script src="https://js.puter.com/v2/"></script>
+
+    <style>
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        /* Prism.js Light Mode Theme */
+        code[class*="language-"],
+        pre[class*="language-"] {
+            color: #24292e;
+            background: none;
+            font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+            text-align: left;
+            white-space: pre;
+            word-spacing: normal;
+            word-break: normal;
+            word-wrap: normal;
+            line-height: 1.5;
+            tab-size: 4;
+            hyphens: none;
+        }
+
+        pre[class*="language-"] {
+            padding: 1em;
+            margin: 0.5em 0;
+            overflow: auto;
+        }
+
+        /* Inline code */
+        :not(pre) > code[class*="language-"] {
+            padding: 0.1em 0.3em;
+            border-radius: 0.3em;
+            white-space: normal;
+        }
+
+        /* Light mode syntax colors */
+        .token.comment,
+        .token.prolog,
+        .token.doctype,
+        .token.cdata {
+            color: #6a737d;
+            font-style: italic;
+        }
+
+        .token.namespace {
+            opacity: 0.7;
+        }
+
+        .token.string,
+        .token.attr-value {
+            color: #032f62;
+        }
+
+        .token.punctuation,
+        .token.operator {
+            color: #24292e;
+        }
+
+        .token.entity,
+        .token.url,
+        .token.symbol,
+        .token.number,
+        .token.boolean,
+        .token.variable,
+        .token.constant,
+        .token.property,
+        .token.regex,
+        .token.inserted {
+            color: #005cc5;
+        }
+
+        .token.atrule,
+        .token.keyword,
+        .token.attr-name,
+        .language-autohotkey .token.selector {
+            color: #d73a49;
+        }
+
+        .token.function,
+        .token.deleted,
+        .language-autohotkey .token.tag {
+            color: #6f42c1;
+        }
+
+        .token.tag,
+        .token.selector,
+        .language-autohotkey .token.keyword {
+            color: #22863a;
+        }
+
+        .token.important,
+        .token.bold {
+            font-weight: bold;
+        }
+
+        .token.italic {
+            font-style: italic;
+        }
+
+        /* Dark mode styles for rendered markdown content */
+        .dark #rendered-content {
+            color: #FFFFFF;
+        }
+
+        .dark #rendered-content h1,
+        .dark #rendered-content h2,
+        .dark #rendered-content h3,
+        .dark #rendered-content h4,
+        .dark #rendered-content h5,
+        .dark #rendered-content h6 {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #rendered-content code {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #e6e6e6;
+        }
+
+        .dark #rendered-content pre {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Dark mode Prism.js syntax highlighting */
+        .dark code[class*="language-"],
+        .dark pre[class*="language-"] {
+            color: #e6e6e6;
+        }
+
+        .dark .token.comment,
+        .dark .token.prolog,
+        .dark .token.doctype,
+        .dark .token.cdata {
+            color: #6a9955;
+        }
+
+        .dark .token.string,
+        .dark .token.attr-value {
+            color: #ce9178;
+        }
+
+        .dark .token.punctuation,
+        .dark .token.operator {
+            color: #d4d4d4;
+        }
+
+        .dark .token.entity,
+        .dark .token.url,
+        .dark .token.symbol,
+        .dark .token.number,
+        .dark .token.boolean,
+        .dark .token.variable,
+        .dark .token.constant,
+        .dark .token.property,
+        .dark .token.regex,
+        .dark .token.inserted {
+            color: #b5cea8;
+        }
+
+        .dark .token.atrule,
+        .dark .token.keyword,
+        .dark .token.attr-name {
+            color: #c586c0;
+        }
+
+        .dark .token.function,
+        .dark .token.deleted {
+            color: #dcdcaa;
+        }
+
+        .dark .token.tag,
+        .dark .token.selector {
+            color: #569cd6;
+        }
+
+        .dark #rendered-content blockquote {
+            border-left-color: rgba(255, 255, 255, 0.3);
+            color: #8E8E93;
+        }
+
+        .dark #rendered-content ul,
+        .dark #rendered-content ol {
+            color: #FFFFFF;
+        }
+
+        .dark #rendered-content li {
+            color: #FFFFFF;
+        }
+
+        .dark #rendered-content table th,
+        .dark #rendered-content table td {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #rendered-content table th {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark #rendered-content table tr:nth-child(2n) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .dark #rendered-content a {
+            color: #007AFF;
+        }
+
+        .dark #rendered-content hr {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #rendered-content .toc {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .mermaid {
+            background: #FFFFFF !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        /* Markdown content styles */
+        #rendered-content h1,
+        #rendered-content h2,
+        #rendered-content h3,
+        #rendered-content h4,
+        #rendered-content h5,
+        #rendered-content h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        #rendered-content h1 {
+            font-size: 2em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 10px;
+        }
+
+        #rendered-content h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 8px;
+        }
+
+        #rendered-content h3 {
+            font-size: 1.25em;
+        }
+
+        #rendered-content h4 {
+            font-size: 1em;
+        }
+
+        #rendered-content p {
+            margin-bottom: 16px;
+        }
+
+        #rendered-content code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #24292e;
+            border: 1px solid #e1e4e8;
+        }
+
+        #rendered-content pre {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            font-size: 85%;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        #rendered-content pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            max-width: auto;
+            overflow: visible;
+            padding: 0;
+        }
+
+        #rendered-content blockquote {
+            border-left: 4px solid rgba(0, 0, 0, 0.2);
+            margin: 0;
+            padding: 0 16px;
+            color: #6a737d;
+        }
+
+        #rendered-content ul,
+        #rendered-content ol {
+            padding-left: 30px;
+            margin-bottom: 16px;
+        }
+
+        #rendered-content ul {
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        #rendered-content ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+        }
+
+        #rendered-content ul ul {
+            list-style-type: circle;
+        }
+
+        #rendered-content ul ul ul {
+            list-style-type: square;
+        }
+
+        #rendered-content li {
+            margin-bottom: 4px;
+            display: list-item;
+        }
+
+        /* Ensure task lists display properly */
+        #rendered-content li input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        #rendered-content table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 16px;
+            width: 100%;
+            display: block;
+            overflow: auto;
+        }
+
+        #rendered-content table th,
+        #rendered-content table td {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 6px 13px;
+            text-align: left;
+        }
+
+        #rendered-content table th {
+            background-color: rgba(0, 0, 0, 0.03);
+            font-weight: 600;
+        }
+
+        #rendered-content table tr:nth-child(2n) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        #rendered-content a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        #rendered-content a:hover {
+            text-decoration: underline;
+        }
+
+        #rendered-content hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin: 24px 0;
+        }
+
+        #rendered-content .toc {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        #rendered-content .toc h2 {
+            margin-top: 0;
+            border-bottom: none;
+            font-size: 1.2em;
+        }
+
+        #rendered-content .toc ul {
+            margin-bottom: 0;
+        }
+
+        #rendered-content .toc li {
+            margin-bottom: 2px;
+        }
+
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            padding: 24px;
+            position: relative;
+            min-height: 400px;
+            width: 100%;
+            max-width: none;
+        }
+
+        .mermaid-container {
+            position: relative;
+            display: block;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .copy-diagram-btn {
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .copy-diagram-btn:hover {
+            background-color: rgba(0, 122, 255, 0.9);
+        }
+
+        /* Loading spinner animation */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* CSV Preview Content Styling - Same as rendered-content */
+        #csv-preview-content h1,
+        #csv-preview-content h2,
+        #csv-preview-content h3,
+        #csv-preview-content h4,
+        #csv-preview-content h5,
+        #csv-preview-content h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        #csv-preview-content h1 {
+            font-size: 2em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 10px;
+        }
+
+        #csv-preview-content h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 8px;
+        }
+
+        #csv-preview-content h3 {
+            font-size: 1.25em;
+        }
+
+        #csv-preview-content h4 {
+            font-size: 1em;
+        }
+
+        #csv-preview-content p {
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #24292e;
+            border: 1px solid #e1e4e8;
+        }
+
+        #csv-preview-content pre {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            font-size: 85%;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            max-width: auto;
+            overflow: visible;
+            padding: 0;
+        }
+
+        #csv-preview-content blockquote {
+            border-left: 4px solid rgba(0, 0, 0, 0.2);
+            margin: 0;
+            padding: 0 16px;
+            color: #6a737d;
+        }
+
+        #csv-preview-content ul,
+        #csv-preview-content ol {
+            padding-left: 30px;
+            margin-bottom: 16px;
+        }
+
+        #csv-preview-content ul {
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        #csv-preview-content ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+        }
+
+        #csv-preview-content ul ul {
+            list-style-type: circle;
+        }
+
+        #csv-preview-content ul ul ul {
+            list-style-type: square;
+        }
+
+        #csv-preview-content li {
+            margin-bottom: 4px;
+            display: list-item;
+        }
+
+        #csv-preview-content li input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        #csv-preview-content table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 16px;
+            width: 100%;
+            display: block;
+            overflow: auto;
+        }
+
+        #csv-preview-content table th,
+        #csv-preview-content table td {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 6px 13px;
+            text-align: left;
+        }
+
+        #csv-preview-content table th {
+            background-color: rgba(0, 0, 0, 0.03);
+            font-weight: 600;
+        }
+
+        #csv-preview-content table tr:nth-child(2n) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        #csv-preview-content a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        #csv-preview-content a:hover {
+            text-decoration: underline;
+        }
+
+        #csv-preview-content hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin: 24px 0;
+        }
+
+        /* Dark mode styles for CSV preview */
+        .dark #csv-preview-content {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content h1,
+        .dark #csv-preview-content h2,
+        .dark #csv-preview-content h3,
+        .dark #csv-preview-content h4,
+        .dark #csv-preview-content h5,
+        .dark #csv-preview-content h6 {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #csv-preview-content code {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark #csv-preview-content pre {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark #csv-preview-content blockquote {
+            border-left-color: rgba(255, 255, 255, 0.3);
+            color: #8E8E93;
+        }
+
+        .dark #csv-preview-content ul,
+        .dark #csv-preview-content ol {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content li {
+            color: #FFFFFF;
+        }
+
+        .dark #csv-preview-content table th,
+        .dark #csv-preview-content table td {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark #csv-preview-content table th {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark #csv-preview-content table tr:nth-child(2n) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .dark #csv-preview-content a {
+            color: #007AFF;
+        }
+
+        .dark #csv-preview-content hr {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Sidebar styling and animations */
+        #editor-sidebar {
+            width: 400px;
+            max-width: 500px;
+            min-width: 300px;
+            transition: width 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        #editor-sidebar.collapsed {
+            width: 120px;
+            max-width: 120px;
+            min-width: 120px;
+        }
+
+        #editor-sidebar.collapsed #textarea-wrapper {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed .flex.gap-2 {
+            display: none;
+        }
+
+        #editor-sidebar.collapsed > div:first-child {
+            padding: 12px;
+            white-space: nowrap;
+        }
+
+        #editor-sidebar.collapsed h2 {
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #editor-sidebar.collapsed ~ #resize-handle {
+            display: none;
+        }
+
+        /* Draggable separator styling */
+        #resize-handle {
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            user-select: none;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        #resize-handle:hover,
+        #resize-handle.dragging {
+            background: #007AFF;
+        }
+
+        .dark #resize-handle:hover,
+        .dark #resize-handle.dragging {
+            background: #0A84FF;
+        }
+
+        /* Ensure both panels maintain proper flex behavior */
+        #renderer-page {
+            display: flex;
+            flex-direction: row;
+            overflow: visible;
+            flex-wrap: nowrap;
+        }
+
+        #textarea-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #markdown-input {
+            width: 100%;
+            flex: 1;
+            resize: none;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        #rendered-content {
+            width: 100%;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #rendered-content h1,
+        #rendered-content h2,
+        #rendered-content h3,
+        #rendered-content h4,
+        #rendered-content h5,
+        #rendered-content h6 {
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+
+        #rendered-content h1 {
+            font-size: 1.75em;
+        }
+
+        #rendered-content h2 {
+            font-size: 1.4em;
+        }
+
+        #rendered-content h3 {
+            font-size: 1.15em;
+        }
+
+        #rendered-content p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        #rendered-content code {
+            font-size: 12px;
+        }
+
+        #rendered-content pre {
+            font-size: 12px;
+        }
+
+        #editor-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Responsive design for smaller screens */
+        @media (max-width: 1024px) {
+            #editor-sidebar {
+                width: 350px;
+                max-width: 350px;
+                min-width: 120px;
+            }
+
+            #renderer-page {
+                gap: 0.5rem;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #editor-sidebar {
+                width: 45vw;
+                min-width: 120px;
+                max-width: 60vw;
+            }
+
+            #renderer-page {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #renderer-page {
+                flex-direction: column;
+                gap: 1rem;
+                flex-wrap: nowrap;
+            }
+
+            #editor-sidebar {
+                width: 100%;
+                max-width: 100%;
+                min-width: 100%;
+            }
+
+            #editor-sidebar.collapsed {
+                width: 100%;
+                max-width: 100%;
+                min-width: 100%;
+            }
+
+            #editor-sidebar.collapsed > div:first-child {
+                padding: 8px 4px;
+            }
+
+            #resize-handle {
+                display: none;
+            }
+
+            #editor-content {
+                width: 100%;
+            }
+        }
+
+        /* AI Features Styles */
+
+        /* Summary Panel */
+        .summary-panel {
+            margin-top: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .summary-panel.show {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .summary-section {
+            padding: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .summary-section {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .summary-section:last-child {
+            border-bottom: none;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .key-points {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .key-points li {
+            padding-left: 24px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .key-points li:before {
+            content: "▪";
+            position: absolute;
+            left: 8px;
+            color: #007AFF;
+            font-weight: bold;
+        }
+
+        /* Chat UI Styles */
+        .floating-chat-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-chat-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.5);
+        }
+
+        .floating-chat-btn .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #FF3B30;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        .chat-container {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-out;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dark .chat-container {
+            background: rgba(28, 28, 30, 0.95);
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-container.open {
+            right: 0;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dark .chat-header {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: messageSlideIn 0.2s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user {
+            align-items: flex-end;
+        }
+
+        .chat-message.user .message-bubble {
+            background: #007AFF;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.assistant {
+            align-items: flex-start;
+        }
+
+        .chat-message.assistant .message-bubble {
+            background: rgba(0, 0, 0, 0.05);
+            color: #000000;
+            border-bottom-left-radius: 4px;
+        }
+
+        .dark .chat-message.assistant .message-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            padding: 0 8px;
+        }
+
+        .chat-input-container {
+            padding: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .dark .chat-input-container {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.03);
+            resize: none;
+            font-family: inherit;
+            max-height: 120px;
+            min-height: 44px;
+        }
+
+        .dark .chat-input {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #007AFF;
+        }
+
+        .chat-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #007AFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover:not(:disabled) {
+            background: #0051D5;
+            transform: scale(1.05);
+        }
+
+        .chat-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #007AFF;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .suggested-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 0;
+        }
+
+        .suggested-question {
+            padding: 10px 14px;
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            border-radius: 12px;
+            color: #007AFF;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .suggested-question:hover {
+            background: rgba(0, 122, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        .dark .suggested-question {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: rgba(0, 122, 255, 0.3);
+        }
+
+        /* Loading spinner for AI */
+        .ai-loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Context indicator */
+        .context-info {
+            padding: 8px 12px;
+            background: rgba(0, 122, 255, 0.1);
+            border-left: 3px solid #007AFF;
+            margin-bottom: 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .dark .context-info {
+            background: rgba(0, 122, 255, 0.15);
+        }
+
+        /* Responsive adjustments for chat */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                right: -100%;
+            }
+
+            .floating-chat-btn {
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
+    <div class="min-h-screen p-4 sm:p-6 lg:p-8">
+        <main class="max-w-7xl mx-auto">
+            <header class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-3xl font-bold tracking-tight">Markdown Renderer</h1>
+                    <button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle">
+                        <span class="material-icons-outlined dark:hidden">dark_mode</span>
+                        <span class="material-icons-outlined hidden dark:inline">light_mode</span>
+                    </button>
+                </div>
+                <div class="flex gap-2 border-b border-border-light dark:border-border-dark">
+                    <button class="px-4 py-3 font-semibold text-primary border-b-2 border-primary transition-colors" id="tab-renderer">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">description</span>Markdown Renderer
+                    </button>
+                    <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-csv">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">table</span>CSV to Markdown
+                    </button>
+                </div>
+            </header>
+
+            <div id="renderer-page" class="flex gap-4 -mx-4 -mb-4 px-4 pb-4 min-h-[80vh]">
+                <!-- Left Sidebar: Markdown Editor -->
+                <div id="editor-sidebar" class="w-96 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark transition-all duration-300 flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+                        <h2 class="text-lg font-semibold">Markdown Input</h2>
+                        <button class="flex items-center text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors" id="sidebar-toggle-btn" title="Collapse sidebar">
+                            <span id="sidebar-toggle-text">Collapse</span>
+                            <span class="material-icons-outlined ml-1" id="sidebar-toggle-icon">chevron_left</span>
+                        </button>
+                    </div>
+                    <div id="textarea-wrapper" class="flex-1 overflow-y-auto">
+                        <textarea class="w-full h-full p-4 bg-transparent border-0 focus:ring-0 resize-none font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="markdown-input" placeholder="Enter your markdown here..."># Markdown Syntax Guide
+
+## Table of Contents
+- [Headers](#headers)
+- [Text Formatting](#text-formatting)
+- [Lists](#lists)
+- [Links and Images](#links-and-images)
+- [Code](#code)
+- [Tables](#tables)
+- [Blockquotes](#blockquotes)
+- [Diagrams](#diagrams)
+
+## Headers
+
+# H1 Header
+## H2 Header
+### H3 Header
+#### H4 Header
+##### H5 Header
+###### H6 Header
+
+## Text Formatting
+
+**Bold text** or __bold text__
+
+*Italic text* or _italic text_
+
+~~Strikethrough text~~
+
+`Inline code`
+
+## Lists
+
+### Unordered List
+- Item 1
+- Item 2
+  - Sub-item 2.1
+  - Sub-item 2.2
+- Item 3
+
+### Ordered List
+1. First item
+2. Second item
+   1. Sub-item 2.1
+   2. Sub-item 2.2
+3. Third item
+
+### Task List
+- [x] Completed task
+- [ ] Incomplete task
+- [ ] Another task
+
+## Links and Images
+
+[Link text](https://example.com)
+
+![Alt text](https://via.placeholder.com/150x100?text=Image)
+
+## Code
+
+### Inline Code
+Use `console.log()` to print to console.
+
+### Code Block
+```javascript
+function greetUser(name) {
+    console.log(`Hello, ${name}!`);
+    return `Welcome, ${name}`;
+}
+
+// Call the function
+const message = greetUser("World");
+```
+
+### Python Example
+```python
+def calculate_fibonacci(n):
+    if n <= 1:
+        return n
+    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+
+# Generate first 10 fibonacci numbers
+for i in range(10):
+    print(f"F({i}) = {calculate_fibonacci(i)}")
+```
+
+## Tables
+
+| Feature | Supported | Notes |
+|---------|-----------|-------|
+| Headers | ✅ | H1-H6 |
+| Lists | ✅ | Ordered & Unordered |
+| Code Blocks | ✅ | Syntax highlighting |
+| Tables | ✅ | With alignment |
+| Mermaid | ✅ | Diagrams & flowcharts |
+| Math | ❌ | Not implemented |
+
+### Aligned Table
+
+| Left Aligned | Center Aligned | Right Aligned |
+|:-------------|:--------------:|--------------:|
+| Text | Text | Text |
+| More text | More text | More text |
+
+## Blockquotes
+
+> This is a blockquote.
+> 
+> It can span multiple lines and paragraphs.
+> 
+> > This is a nested blockquote.
+
+## Diagrams
+
+### Flowchart
+```mermaid
+flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Process A]
+    B -->|No| D[Process B]
+    C --> E[End]
+    D --> E
+```
+
+### Sequence Diagram
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant Database
+
+    User->>App: Login request
+    activate App
+    App->>Database: Validate credentials
+    activate Database
+    Database-->>App: Validation result
+    deactivate Database
+    App-->>User: Login response
+    deactivate App
+```
+
+### Class Diagram
+```mermaid
+classDiagram
+    class User {
+        +String name
+        +String email
+        +login()
+        +logout()
+    }
+    
+    class Admin {
+        +String permissions
+        +manageUsers()
+    }
+    
+    User <|-- Admin
+```
+
+---
+
+## Additional Elements
+
+### Horizontal Rule
+Use `---` to create a horizontal rule.
+
+### Line Breaks
+End a line with two spaces  
+to create a line break.
+
+### Escape Characters
+Use backslash to escape \*special\* characters.
+
+**Try editing this content and click "Render Markdown" to see the results!**</textarea>
+                    </div>
+                    <div class="flex flex-col gap-2 p-4 border-t border-border-light dark:border-border-dark bg-opacity-50">
+                        <button class="w-full px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="render-btn">Render Markdown</button>
+                        <button class="w-full px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="summarize-btn">
+                            <span class="material-icons-outlined text-sm">auto_awesome</span>
+                            <span>Summarize</span>
+                        </button>
+                        <div class="flex gap-2">
+                            <button class="flex-1 px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-btn">Clear</button>
+                            <button class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="share-btn">
+                                <span class="material-icons-outlined text-sm">share</span>
+                                <span>Share</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Draggable resize handle -->
+                <div id="resize-handle"></div>
+
+                <!-- Right Panel: Rendered Output -->
+                <div id="editor-content" class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark">
+                        <h2 class="text-lg font-semibold">Rendered Output</h2>
+                    </div>
+                    <div id="rendered-content" class="flex-1 overflow-y-auto p-6">
+                        <p class="text-secondary-text-light dark:text-secondary-text-dark italic">👆 The markdown content is loaded on the left. Click "Render Markdown" to see it rendered with all the Mermaid diagrams!</p>
+
+                        <!-- AI Summary Panel -->
+                        <div id="summary-panel" class="summary-panel bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark">
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">summarize</span>
+                                    <span>AI Summary</span>
+                                </div>
+                                <div id="summary-content" class="text-text-light dark:text-text-dark"></div>
+                            </div>
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">list</span>
+                                    <span>Key Points</span>
+                                </div>
+                                <ul id="key-points" class="key-points text-text-light dark:text-text-dark"></ul>
+                            </div>
+                            <div class="summary-section">
+                                <div class="summary-title">
+                                    <span class="material-icons-outlined text-primary">schedule</span>
+                                    <span>Reading Time</span>
+                                </div>
+                                <div id="reading-time" class="text-text-light dark:text-text-dark"></div>
+                            </div>
+                            <div class="summary-section" style="border-bottom: none; padding-top: 12px;">
+                                <button class="px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-all duration-300 flex items-center gap-2" id="copy-summary-btn">
+                                    <span class="material-icons-outlined text-sm">content_copy</span>
+                                    <span>Copy Summary</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="csv-page" class="hidden">
+            <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark" id="csv-editor-container">
+                <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                    <h2 class="text-lg font-semibold">CSV Input</h2>
+                </div>
+                <textarea class="w-full h-64 p-4 bg-transparent border-0 focus:ring-0 resize-y font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark" id="csv-input" placeholder="Paste your CSV data here...
+Example:
+Name,Age,City,Occupation
+John Doe,28,New York,Software Engineer
+Jane Smith,34,San Francisco,Product Manager
+Bob Johnson,45,Chicago,Designer"></textarea>
+                <div class="flex flex-col sm:flex-row items-center gap-4 p-4 bg-opacity-50 border-t border-border-light dark:border-border-dark">
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="convert-btn">Convert to Markdown</button>
+                    <button class="flex-1 sm:flex-none px-4 py-2 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300" id="clear-csv-btn">Clear</button>
+                </div>
+            </div>
+
+            <div class="mt-12">
+                <h2 class="text-xl font-semibold mb-4">Markdown Output</h2>
+                <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4">
+                    <div id="markdown-output" class="font-mono text-sm leading-6 text-text-light dark:text-text-dark mb-4 p-4 bg-background-light dark:bg-background-dark rounded border border-border-light dark:border-border-dark overflow-x-auto">
+                        <p class="text-secondary-text-light dark:text-secondary-text-dark italic">Markdown output will appear here after conversion...</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-2">
+                        <button class="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="copy-markdown-btn">
+                            <span class="material-icons-outlined text-sm">content_copy</span>
+                            <span>Copy Markdown</span>
+                        </button>
+                        <button class="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all duration-300 flex items-center justify-center gap-2" id="preview-btn">
+                            <span class="material-icons-outlined text-sm">preview</span>
+                            <span>Preview</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="preview-section" class="hidden mt-12">
+                <h2 class="text-xl font-semibold mb-4">Preview</h2>
+                <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4" id="csv-preview-content">
+                </div>
+            </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Chat Interface -->
+    <!-- Floating Chat Button -->
+    <button class="floating-chat-btn" id="floating-chat-btn" title="Ask AI about the document">
+        <span class="material-icons-outlined">chat</span>
+        <span class="badge" id="chat-badge" style="display: none;">AI</span>
+    </button>
+
+    <!-- Chat Panel -->
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            <div class="chat-title">
+                <span class="material-icons-outlined">smart_toy</span>
+                <span>Document Assistant</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="p-2 hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded-lg transition" id="clear-chat-btn" title="Clear conversation">
+                    <span class="material-icons-outlined text-lg">delete_outline</span>
+                </button>
+                <button class="p-2 hover:bg-black hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded-lg transition" id="close-chat-btn" title="Close chat">
+                    <span class="material-icons-outlined text-lg">close</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <!-- Context Info -->
+            <div class="context-info" id="context-info">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">info</span>
+                    <strong>Document loaded</strong>
+                </div>
+                <div id="doc-stats">Ready to answer questions about your document</div>
+            </div>
+
+            <!-- Suggested Questions -->
+            <div class="suggested-questions" id="suggested-questions">
+                <div style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 4px;">Try asking:</div>
+                <button class="suggested-question" data-question="Summarize the main points of this document">Summarize the main points of this document</button>
+                <button class="suggested-question" data-question="What are the key takeaways?">What are the key takeaways?</button>
+                <button class="suggested-question" data-question="Explain the most important section">Explain the most important section</button>
+            </div>
+
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <div class="chat-input-container">
+            <textarea
+                class="chat-input"
+                id="chat-input"
+                placeholder="Ask a question about the document..."
+                rows="1"
+            ></textarea>
+            <button class="chat-send-btn" id="chat-send-btn">
+                <span class="material-icons-outlined">send</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        const tabRenderer = document.getElementById('tab-renderer');
+        const tabCsv = document.getElementById('tab-csv');
+        const rendererPage = document.getElementById('renderer-page');
+        const csvPage = document.getElementById('csv-page');
+
+        function switchToRenderer() {
+            rendererPage.style.display = 'block';
+            csvPage.style.display = 'none';
+            tabRenderer.classList.add('text-primary', 'border-primary');
+            tabRenderer.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            tabCsv.classList.remove('text-primary', 'border-primary');
+            tabCsv.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
+
+        function switchToCsv() {
+            rendererPage.style.display = 'none';
+            csvPage.style.display = 'block';
+            tabCsv.classList.add('text-primary', 'border-primary');
+            tabCsv.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            tabRenderer.classList.remove('text-primary', 'border-primary');
+            tabRenderer.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
+
+        tabRenderer.addEventListener('click', switchToRenderer);
+        tabCsv.addEventListener('click', switchToCsv);
+
+        // CSV to Markdown conversion functions
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const rows = [];
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                // Simple CSV parser that handles quoted values
+                const row = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const nextChar = line[i + 1];
+
+                    if (char === '"') {
+                        if (inQuotes && nextChar === '"') {
+                            current += '"';
+                            i++; // Skip next quote
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                row.push(current.trim());
+                rows.push(row);
+            }
+
+            return rows;
+        }
+
+        function generateMarkdownTable(rows) {
+            if (rows.length === 0) {
+                return '';
+            }
+
+            const header = rows[0];
+            const data = rows.slice(1);
+
+            // Generate header row
+            let markdown = '| ' + header.join(' | ') + ' |\n';
+
+            // Generate separator row
+            markdown += '| ' + header.map(() => '---').join(' | ') + ' |\n';
+
+            // Generate data rows
+            for (const row of data) {
+                // Pad row to match header length
+                while (row.length < header.length) {
+                    row.push('');
+                }
+                markdown += '| ' + row.slice(0, header.length).join(' | ') + ' |\n';
+            }
+
+            return markdown;
+        }
+
+        // CSV page event listeners
+        const convertBtn = document.getElementById('convert-btn');
+        const clearCsvBtn = document.getElementById('clear-csv-btn');
+        const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const csvInput = document.getElementById('csv-input');
+        const markdownOutput = document.getElementById('markdown-output');
+        const previewSection = document.getElementById('preview-section');
+        const csvPreviewContent = document.getElementById('csv-preview-content');
+
+        convertBtn.addEventListener('click', function() {
+            const csvText = csvInput.value;
+
+            if (!csvText.trim()) {
+                markdownOutput.innerHTML = '<p class="text-red-500">Please enter CSV data first!</p>';
+                return;
+            }
+
+            try {
+                const rows = parseCSV(csvText);
+
+                if (rows.length === 0) {
+                    markdownOutput.innerHTML = '<p class="text-red-500">No valid CSV data found!</p>';
+                    return;
+                }
+
+                const markdown = generateMarkdownTable(rows);
+                markdownOutput.innerHTML = '<pre>' + escapeHtml(markdown) + '</pre>';
+                markdownOutput.dataset.markdown = markdown;
+                previewSection.style.display = 'none';
+            } catch (error) {
+                markdownOutput.innerHTML = '<p class="text-red-500">Error parsing CSV: ' + escapeHtml(error.message) + '</p>';
+            }
+        });
+
+        clearCsvBtn.addEventListener('click', function() {
+            csvInput.value = '';
+            markdownOutput.innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Markdown output will appear here after conversion...</p>';
+            previewSection.style.display = 'none';
+        });
+
+        copyMarkdownBtn.addEventListener('click', function() {
+            const markdown = markdownOutput.dataset.markdown;
+
+            if (!markdown) {
+                alert('Please convert CSV to Markdown first!');
+                return;
+            }
+
+            navigator.clipboard.writeText(markdown).then(() => {
+                const originalHTML = copyMarkdownBtn.innerHTML;
+                copyMarkdownBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
+                copyMarkdownBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                copyMarkdownBtn.classList.add('bg-green-500');
+
+                setTimeout(() => {
+                    copyMarkdownBtn.innerHTML = originalHTML;
+                    copyMarkdownBtn.classList.remove('bg-green-500');
+                    copyMarkdownBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        });
+
+        previewBtn.addEventListener('click', async function() {
+            const markdown = markdownOutput.dataset.markdown;
+
+            if (!markdown) {
+                alert('Please convert CSV to Markdown first!');
+                return;
+            }
+
+            try {
+                const html = marked.parse(markdown);
+                csvPreviewContent.innerHTML = html;
+                previewSection.style.display = 'block';
+                previewSection.scrollIntoView({ behavior: 'smooth' });
+
+                // Re-run Prism for syntax highlighting if any
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAll();
+                }
+            } catch (error) {
+                csvPreviewContent.innerHTML = '<p class="text-red-500">Error rendering preview: ' + escapeHtml(error.message) + '</p>';
+                previewSection.style.display = 'block';
+            }
+        });
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Configure Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: true,
+                showSequenceNumbers: true
+            },
+            gantt: {
+                useMaxWidth: true
+            },
+            securityLevel: 'loose',
+            fontFamily: 'arial, sans-serif'
+        });
+
+        // Configure Marked
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            headerPrefix: '',
+        });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        });
+
+        // Initialize theme on page load
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        async function renderMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+            const output = document.getElementById('rendered-content');
+            
+            if (!input.trim()) {
+                output.innerHTML = '<p class="text-red-500">Please enter some markdown content first!</p>';
+                return;
+            }
+            
+            // Custom renderer to handle mermaid code blocks
+            const renderer = new marked.Renderer();
+            renderer.code = function(code, language) {
+                if (language === 'mermaid') {
+                    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                    return `<div class="mermaid-container">
+                        <div class="mermaid" id="${id}">${code}</div>
+                    </div>`;
+                }
+                return `<pre><code class="language-${language || ''}">${code}</code></pre>`;
+            };
+            
+            // Configure marked with custom renderer
+            marked.setOptions({
+                renderer: renderer,
+                breaks: true,
+                gfm: true,
+                headerIds: true,
+                headerPrefix: '',
+            });
+            
+            // Convert markdown to HTML
+            const html = marked.parse(input);
+            output.innerHTML = html;
+            
+            // Wait a bit for DOM to update
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Render mermaid diagrams
+            const mermaidElements = output.querySelectorAll('.mermaid');
+            
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const element = mermaidElements[i];
+                const code = element.textContent.trim();
+                
+                try {
+                    // Clear the element first
+                    element.innerHTML = '';
+                    
+                    // Use modern mermaid API
+                    const { svg } = await mermaid.render(`mermaid-${i}-${Date.now()}`, code);
+                    
+                    // Set the SVG directly into the mermaid element
+                    element.innerHTML = svg;
+                    
+                    // Create and add the copy button after the diagram
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-diagram-btn';
+                    copyButton.innerHTML = '📋 Copy as Image';
+                    copyButton.onclick = () => copyDiagramAsImage(element.id);
+                    
+                    // Add button after the mermaid element
+                    element.parentNode.appendChild(copyButton);
+                    
+                } catch (error) {
+                    console.error('Mermaid rendering error:', error);
+                    element.innerHTML = `<div style="color: #d73a49; padding: 10px; border: 1px solid #d73a49; border-radius: 4px;">
+                        <strong>Mermaid Error:</strong><br>
+                        ${error.message}<br><br>
+                        <strong>Code:</strong><br>
+                        <pre style="background: #f8f8f8; padding: 8px; margin: 8px 0;">${code}</pre>
+                    </div>`;
+                }
+            }
+            
+            // Re-run Prism for syntax highlighting
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+        }
+        
+        function clearContent() {
+            document.getElementById('markdown-input').value = '';
+            document.getElementById('rendered-content').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Content cleared. Paste new markdown content above and render it!</p>';
+        }
+
+        // Helper function to convert byte array to base64url
+        function bytesToBase64url(bytes) {
+            // Avoid stack overflow for large arrays by processing in chunks
+            let binary = '';
+            const chunkSize = 0x8000; // 32K chunks
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                binary += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+            }
+            const base64 = btoa(binary);
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        // Helper function to convert base64url to byte array
+        function base64urlToBytes(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return Array.from(bytes);
+        }
+
+        // Share functionality - encode markdown to URL with pako compression
+        async function shareMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+
+            if (!input.trim()) {
+                alert('Please enter some markdown content first!');
+                return;
+            }
+
+            const shareBtn = document.getElementById('share-btn');
+            const originalHTML = shareBtn.innerHTML;
+
+            try {
+                // Show loading state
+                shareBtn.innerHTML = '<span class="material-icons-outlined text-sm animate-spin">autorenew</span><span>Compressing...</span>';
+                shareBtn.disabled = true;
+
+                // Small delay to show loading state
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                // Compress with pako (gzip with highest compression)
+                const compressed = pako.deflate(input, { level: 9 });
+
+                // Convert to base64url for URL safety
+                const encoded = bytesToBase64url(compressed);
+
+                // Create shareable URL
+                const baseUrl = window.location.origin + window.location.pathname;
+                const shareUrl = `${baseUrl}?md=${encoded}`;
+
+                // Calculate compression ratio
+                const originalSize = new Blob([input]).size;
+                const compressedSize = compressed.length;
+                const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    // Show success feedback with compression ratio
+                    shareBtn.innerHTML = `<span class="material-icons-outlined text-sm">check</span><span>Copied! (${ratio}% smaller)</span>`;
+                    shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    shareBtn.classList.add('bg-green-500');
+                    shareBtn.disabled = false;
+
+                    setTimeout(() => {
+                        shareBtn.innerHTML = originalHTML;
+                        shareBtn.classList.remove('bg-green-500');
+                        shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }, 3000);
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    shareBtn.innerHTML = originalHTML;
+                    shareBtn.disabled = false;
+                    // Fallback: show the URL in a prompt
+                    prompt('Copy this URL to share:', shareUrl);
+                });
+
+            } catch (error) {
+                console.error('Error creating share link:', error);
+                shareBtn.innerHTML = originalHTML;
+                shareBtn.disabled = false;
+                alert('Failed to create share link. Content may be too large.');
+            }
+        }
+
+        // Load markdown from URL parameter with pako decompression
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedMarkdown = urlParams.get('md');
+
+            if (encodedMarkdown) {
+                try {
+                    // Convert from base64url to byte array
+                    const compressed = base64urlToBytes(encodedMarkdown);
+
+                    // Decompress with pako
+                    const decompressed = pako.inflate(new Uint8Array(compressed), { to: 'string' });
+
+                    if (decompressed) {
+                        document.getElementById('markdown-input').value = decompressed;
+                        // Auto-render after a short delay to ensure everything is loaded
+                        setTimeout(() => renderMarkdown(), 100);
+                    } else {
+                        console.error('Failed to decode markdown from URL');
+                    }
+
+                } catch (error) {
+                    console.error('Error loading markdown from URL:', error);
+                }
+            }
+        }
+
+        // Button event listeners
+        document.getElementById('render-btn').addEventListener('click', renderMarkdown);
+        document.getElementById('clear-btn').addEventListener('click', clearContent);
+        document.getElementById('share-btn').addEventListener('click', shareMarkdown);
+
+        // Get DOM elements for later use
+        const markdownInput = document.getElementById('markdown-input');
+        const renderedContent = document.getElementById('rendered-content');
+
+        // Keyboard shortcut for rendering (Ctrl+Enter or Cmd+Enter)
+        markdownInput.addEventListener('keydown', async function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                await renderMarkdown();
+            }
+        });
+
+        // Sidebar toggle functionality
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+        const sidebarToggleText = document.getElementById('sidebar-toggle-text');
+        const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+        const editorSidebar = document.getElementById('editor-sidebar');
+
+        // Load sidebar state from localStorage
+        let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        function updateSidebarUI() {
+            if (sidebarCollapsed) {
+                editorSidebar.classList.add('collapsed');
+                sidebarToggleText.textContent = 'Expand';
+                sidebarToggleIcon.textContent = 'chevron_right';
+            } else {
+                editorSidebar.classList.remove('collapsed');
+                sidebarToggleText.textContent = 'Collapse';
+                sidebarToggleIcon.textContent = 'chevron_left';
+            }
+        }
+
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+            updateSidebarUI();
+        }
+
+        // Initialize sidebar state
+        updateSidebarUI();
+
+        sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+        // Resizable panels with draggable separator
+        const resizeHandle = document.getElementById('resize-handle');
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        // Load saved sidebar width from localStorage
+        function loadSidebarWidth() {
+            const savedWidth = localStorage.getItem('sidebarWidth');
+            if (savedWidth && !sidebarCollapsed) {
+                const width = parseInt(savedWidth);
+                if (width >= 300 && width <= 600) {
+                    editorSidebar.style.width = width + 'px';
+                }
+            }
+        }
+
+        // Initialize sidebar width on load
+        loadSidebarWidth();
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            if (sidebarCollapsed) return;
+
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = editorSidebar.offsetWidth;
+            resizeHandle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const diff = e.clientX - startX;
+            const newWidth = startWidth + diff;
+
+            // Constrain width between min and max
+            if (newWidth >= 300 && newWidth <= 600) {
+                editorSidebar.style.width = newWidth + 'px';
+                editorSidebar.style.maxWidth = newWidth + 'px';
+                editorSidebar.style.minWidth = newWidth + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+
+            isResizing = false;
+            resizeHandle.classList.remove('dragging');
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+
+            // Save sidebar width to localStorage
+            localStorage.setItem('sidebarWidth', editorSidebar.offsetWidth);
+        });
+
+        // Auto-scroll synchronization
+        let syncLock = false;
+
+        function syncScroll(sourceElement, targetElement) {
+            if (syncLock) return;
+
+            try {
+                syncLock = true;
+
+                const scrollTop = sourceElement.scrollTop;
+                const scrollHeight = sourceElement.scrollHeight - sourceElement.clientHeight;
+
+                // Avoid division by zero
+                if (scrollHeight <= 0) {
+                    return;
+                }
+
+                // Calculate scroll percentage
+                const scrollPercentage = scrollTop / scrollHeight;
+
+                // Get target's scroll height
+                const targetScrollHeight = targetElement.scrollHeight - targetElement.clientHeight;
+
+                // Apply the same percentage to target
+                targetElement.scrollTop = scrollPercentage * targetScrollHeight;
+            } finally {
+                syncLock = false;
+            }
+        }
+
+        // Scroll event listeners
+        markdownInput.addEventListener('scroll', () => {
+            syncScroll(markdownInput, renderedContent);
+        });
+
+        renderedContent.addEventListener('scroll', () => {
+            syncScroll(renderedContent, markdownInput);
+        });
+
+        // Auto-render on page load
+        window.addEventListener('load', function() {
+            // First check if there's shared markdown in the URL
+            loadFromURL();
+
+            // If no URL parameter, render the default content
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('md')) {
+                setTimeout(renderMarkdown, 500);
+            }
+        });
+
+        // Function to copy diagram as image
+        async function copyDiagramAsImage(diagramId) {
+            try {
+                // Ensure window is focused before clipboard operation
+                window.focus();
+                
+                const diagramElement = document.getElementById(diagramId);
+                const svgElement = diagramElement.querySelector('svg');
+                
+                if (!svgElement) {
+                    alert('No diagram found to copy');
+                    return;
+                }
+
+                // Get SVG dimensions
+                const svgRect = svgElement.getBoundingClientRect();
+                const svgWidth = svgRect.width || 800;
+                const svgHeight = svgRect.height || 600;
+                
+                // Create canvas directly
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set high resolution with zero padding
+                const scale = 3;
+                const padding = 0; // Zero padding
+                canvas.width = (svgWidth + padding * 2) * scale;
+                canvas.height = (svgHeight + padding * 2) * scale;
+                
+                // Scale context
+                ctx.scale(scale, scale);
+                
+                // Fill with bright white background
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
+                
+                // Enable high-quality rendering
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.textRenderingOptimization = 'optimizeQuality';
+                
+                // Create a simplified SVG string approach
+                const svgClone = svgElement.cloneNode(true);
+                
+                // Set proper dimensions and WHITE background
+                svgClone.setAttribute('width', svgWidth);
+                svgClone.setAttribute('height', svgHeight);
+                svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                
+                // Add bright white background rect as first child
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('width', '100%');
+                bgRect.setAttribute('height', '100%');
+                bgRect.setAttribute('fill', '#FFFFFF');
+                bgRect.setAttribute('stroke', 'none');
+                svgClone.insertBefore(bgRect, svgClone.firstChild);
+                
+                // More aggressive sequence number styling with pure white background
+                const allElements = svgClone.querySelectorAll('*');
+                allElements.forEach(el => {
+                    // Remove any outer borders/containers
+                    if (el.tagName === 'g' && el.getAttribute('class')?.includes('background')) {
+                        el.remove();
+                        return;
+                    }
+                    
+                    // Remove outer rectangle borders
+                    if (el.tagName === 'rect' && (
+                        el.getAttribute('width') === '100%' ||
+                        parseFloat(el.getAttribute('width')) > svgWidth * 0.9
+                    )) {
+                        // This is likely an outer container - make it invisible or remove stroke
+                        el.setAttribute('fill', '#FFFFFF');
+                        el.setAttribute('stroke', 'none');
+                        el.setAttribute('stroke-width', '0');
+                    }
+                    
+                    // Handle circles (sequence number backgrounds)
+                    else if (el.tagName === 'circle') {
+                        el.setAttribute('fill', '#000000');
+                        el.setAttribute('stroke', '#000000');
+                        el.setAttribute('stroke-width', '2');
+                    }
+                    
+                    // Handle all text elements
+                    else if (el.tagName === 'text') {
+                        const textContent = el.textContent?.trim();
+                        
+                        // Check if this is a sequence number (digit only)
+                        if (/^\d+$/.test(textContent)) {
+                            // Force white color for sequence numbers
+                            el.setAttribute('fill', '#FFFFFF');
+                            el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 14px; fill: #FFFFFF !important; text-anchor: middle; dominant-baseline: central; font-weight: bold;');
+                        } else {
+                            // Regular text (black on white background)
+                            el.setAttribute('fill', '#000000');
+                            el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 12px; fill: #000000; text-anchor: middle; dominant-baseline: central;');
+                            
+                            // Participant names should be bold
+                            const isParticipant = el.parentNode?.querySelector('rect') || 
+                                                el.previousElementSibling?.tagName === 'rect' ||
+                                                ['client', 'studio-svc', 'Database', 'web3-svc', 'System', 'Worker', 'OpenAI'].includes(textContent);
+                            
+                            if (isParticipant) {
+                                el.setAttribute('style', 'font-family: Arial, sans-serif; font-size: 14px; fill: #000000; text-anchor: middle; dominant-baseline: central; font-weight: bold;');
+                            }
+                        }
+                    }
+                    
+                    // Handle rectangles (participant boxes) - but not outer containers
+                    else if (el.tagName === 'rect' && parseFloat(el.getAttribute('width')) < svgWidth * 0.3) {
+                        el.setAttribute('fill', '#F8F8F8');
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                    
+                    // Handle lines
+                    else if (el.tagName === 'line') {
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                    
+                    // Handle paths (arrows, etc.)
+                    else if (el.tagName === 'path') {
+                        el.setAttribute('stroke', '#333333');
+                        el.setAttribute('fill', '#333333');
+                        el.setAttribute('stroke-width', '1.5');
+                    }
+                });
+                
+                // Convert to data URL using XMLSerializer
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svgClone);
+                const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+                
+                // Create image element
+                const img = new Image();
+                
+                img.onload = function() {
+                    try {
+                        // Draw the SVG image
+                        ctx.drawImage(img, padding, padding, svgWidth, svgHeight);
+                        
+                        // Convert to blob
+                        canvas.toBlob(async function(blob) {
+                            if (!blob) {
+                                showCopyFeedback(diagramId, '❌ Blob creation failed', 'red');
+                                return;
+                            }
+                            
+                            try {
+                                // Focus window again before clipboard operation
+                                window.focus();
+                                
+                                // Try clipboard with better error handling
+                                if (navigator.clipboard && window.ClipboardItem && document.hasFocus()) {
+                                    const item = new ClipboardItem({ 'image/png': blob });
+                                    await navigator.clipboard.write([item]);
+                                    showCopyFeedback(diagramId, '✅ Copied!', 'green');
+                                } else {
+                                    // Fallback: download
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `sequence-diagram-${Date.now()}.png`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    showCopyFeedback(diagramId, '📥 Downloaded!', 'blue');
+                                }
+                            } catch (error) {
+                                console.error('Clipboard error:', error);
+                                
+                                // Auto-fallback to download on clipboard error
+                                try {
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `sequence-diagram-${Date.now()}.png`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    showCopyFeedback(diagramId, '📥 Auto-downloaded!', 'blue');
+                                } catch (downloadError) {
+                                    showCopyFeedback(diagramId, '❌ Copy & download failed', 'red');
+                                }
+                            }
+                        }, 'image/png', 1.0);
+                        
+                    } catch (drawError) {
+                        console.error('Draw error:', drawError);
+                        showCopyFeedback(diagramId, '❌ Draw failed', 'red');
+                    }
+                };
+                
+                img.onerror = function(error) {
+                    console.error('SVG load error:', error);
+                    showCopyFeedback(diagramId, '❌ SVG load failed', 'red');
+                };
+                
+                // Set the data URL
+                img.src = svgDataUrl;
+                
+            } catch (error) {
+                console.error('General error:', error);
+                showCopyFeedback(diagramId, '❌ General error', 'red');
+            }
+        }
+
+        // Show feedback when copying
+        function showCopyFeedback(diagramId, message, color) {
+            const button = document.querySelector(`[onclick="copyDiagramAsImage('${diagramId}')"]`);
+            if (button) {
+                const originalText = button.textContent;
+                button.textContent = message;
+                button.style.backgroundColor = color;
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '#0969da';
+                }, 2000);
+            }
+        }
+
+        // ========================================
+        // AI FEATURES - Document Summarization & Chat
+        // ========================================
+
+        // AI State Management
+        const AIState = {
+            currentMarkdown: '',
+            summary: null,
+            chatHistory: [],
+            isChatOpen: false,
+            isProcessing: false
+        };
+
+        // AI Helper - Call Puter.js GLM API
+        async function callAI(prompt, options = {}) {
+            try {
+                console.log('=== CALLING AI API ===');
+                console.log('Model:', options.model || "z-ai/glm-4.7");
+
+                const response = await puter.ai.chat(prompt, {
+                    model: options.model || "z-ai/glm-4.7",
+                    ...options
+                });
+
+                // Log the raw response for debugging
+                console.log('=== AI API RAW RESPONSE ===');
+                console.log('Full response:', response);
+                console.log('Response type:', typeof response);
+
+                // Try to stringify to see structure
+                try {
+                    console.log('Response JSON:', JSON.stringify(response, null, 2));
+                } catch (e) {
+                    console.log('Cannot stringify response:', e);
+                }
+
+                if (response && typeof response === 'object') {
+                    console.log('Response keys:', Object.keys(response));
+                    console.log('Response values:', Object.values(response));
+                }
+
+                // Extract text from response - handle both string and object responses
+                let text = response;
+
+                // If it's already a string, use it
+                if (typeof response === 'string') {
+                    text = response;
+                    console.log('Response is already a string:', text);
+                }
+                // If it's an object, extract the text
+                else if (typeof response === 'object' && response !== null) {
+                    console.log('Attempting to extract text from object...');
+
+                    // Check for nested message.content structure (GLM-4.7 format)
+                    if (response.message && response.message.content) {
+                        text = response.message.content;
+                        console.log('Found text in response.message.content');
+                    }
+                    // Try other possible properties
+                    else {
+                        text = response.content
+                            || response.text
+                            || response.message
+                            || response.response
+                            || response.answer
+                            || response.output
+                            || response.result;
+                        console.log('Found text in direct property:', typeof text);
+                    }
+
+                    // If still an object or undefined, try to get the first string value
+                    if (!text || (typeof text === 'object' && text !== null)) {
+                        console.log('Still not a string, searching object values...');
+                        const values = Object.values(response);
+                        text = values.find(v => typeof v === 'string');
+                        console.log('Found string in values:', text);
+                    }
+
+                    // Last resort: stringify
+                    if (!text || typeof text !== 'string') {
+                        console.log('Last resort: stringifying object');
+                        text = JSON.stringify(response, null, 2);
+                    }
+                }
+
+                // Ensure we have a string
+                if (typeof text !== 'string') {
+                    console.log('Converting to string, current type:', typeof text);
+                    text = String(text);
+                }
+
+                console.log('=== FINAL EXTRACTED TEXT ===');
+                console.log('Preview:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+                console.log('Full length:', text.length, 'characters');
+                console.log('========================');
+
+                return { success: true, data: text };
+            } catch (error) {
+                console.error('=== AI API ERROR ===');
+                console.error('Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                return {
+                    success: false,
+                    error: error.message || 'Failed to connect to AI service. Please try again.'
+                };
+            }
+        }
+
+        // Calculate reading time
+        function calculateReadingTime(text) {
+            const wordsPerMinute = 200;
+            const words = text.trim().split(/\s+/).length;
+            const minutes = Math.ceil(words / wordsPerMinute);
+            return `${minutes} min read (${words} words)`;
+        }
+
+        // Parse AI response for summary
+        function parseSummaryResponse(response) {
+            // Ensure response is a string
+            if (typeof response !== 'string') {
+                response = String(response);
+            }
+
+            const lines = response.split('\n').filter(line => line.trim());
+
+            // Try to extract structured content
+            let summary = '';
+            let keyPoints = [];
+
+            let currentSection = 'summary';
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                // Check for key points section
+                if (trimmed.match(/^(key points|main points|highlights)/i)) {
+                    currentSection = 'points';
+                    continue;
+                }
+
+                // Extract bullet points
+                if (trimmed.match(/^[-*•▪]\s/) || trimmed.match(/^\d+\.\s/)) {
+                    const point = trimmed.replace(/^[-*•▪]\s/, '').replace(/^\d+\.\s/, '');
+                    if (point.length > 10) {
+                        keyPoints.push(point);
+                    }
+                } else if (currentSection === 'summary' && trimmed.length > 20) {
+                    summary += trimmed + ' ';
+                }
+            }
+
+            // If no structured content found, use the whole response
+            if (!summary && keyPoints.length === 0) {
+                const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 20);
+                summary = sentences.slice(0, 3).join('. ') + '.';
+                keyPoints = sentences.slice(3, 8).map(s => s.trim());
+            }
+
+            return {
+                summary: summary.trim() || response.substring(0, 300),
+                keyPoints: keyPoints.length > 0 ? keyPoints : ['Summary generated successfully']
+            };
+        }
+
+        // SUMMARIZATION FEATURE
+        const summarizeBtn = document.getElementById('summarize-btn');
+        const summaryPanel = document.getElementById('summary-panel');
+        const summaryContent = document.getElementById('summary-content');
+        const keyPointsList = document.getElementById('key-points');
+        const readingTime = document.getElementById('reading-time');
+        const copySummaryBtn = document.getElementById('copy-summary-btn');
+
+        summarizeBtn.addEventListener('click', async function() {
+            const markdownInput = document.getElementById('markdown-input').value;
+
+            if (!markdownInput.trim()) {
+                alert('Please enter some markdown content first!');
+                return;
+            }
+
+            // Show loading state
+            const originalHTML = summarizeBtn.innerHTML;
+            summarizeBtn.innerHTML = '<span class="ai-loading"></span><span style="margin-left: 8px;">Summarizing...</span>';
+            summarizeBtn.disabled = true;
+
+            try {
+                AIState.currentMarkdown = markdownInput;
+
+                // Call AI to summarize
+                const prompt = `Please analyze and summarize the following markdown document. Provide:
+
+1. A concise summary (2-3 sentences capturing the main idea)
+2. Key points (5-7 important bullet points)
+
+Markdown content:
+${markdownInput.substring(0, 8000)}`;
+
+                const result = await callAI(prompt);
+
+                if (result.success) {
+                    const parsed = parseSummaryResponse(result.data);
+                    AIState.summary = parsed;
+
+                    // Update UI
+                    summaryContent.textContent = parsed.summary;
+
+                    keyPointsList.innerHTML = '';
+                    parsed.keyPoints.forEach(point => {
+                        const li = document.createElement('li');
+                        li.textContent = point;
+                        keyPointsList.appendChild(li);
+                    });
+
+                    readingTime.textContent = calculateReadingTime(markdownInput);
+
+                    // Show panel
+                    summaryPanel.classList.add('show');
+
+                    // Scroll to summary
+                    setTimeout(() => {
+                        summaryPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+
+                } else {
+                    alert('Error: ' + result.error);
+                }
+
+            } catch (error) {
+                console.error('Summarization error:', error);
+                alert('Failed to generate summary. Please try again.');
+            } finally {
+                summarizeBtn.innerHTML = originalHTML;
+                summarizeBtn.disabled = false;
+            }
+        });
+
+        // Copy summary to clipboard
+        copySummaryBtn.addEventListener('click', function() {
+            if (!AIState.summary) return;
+
+            const text = `Summary:\n${AIState.summary.summary}\n\nKey Points:\n${AIState.summary.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = copySummaryBtn.innerHTML;
+                copySummaryBtn.innerHTML = '<span class="material-icons-outlined text-sm">check</span><span>Copied!</span>';
+
+                setTimeout(() => {
+                    copySummaryBtn.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        });
+
+        // CHAT FEATURE
+        const floatingChatBtn = document.getElementById('floating-chat-btn');
+        const chatContainer = document.getElementById('chat-container');
+        const closeChatBtn = document.getElementById('close-chat-btn');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const docStats = document.getElementById('doc-stats');
+
+        // Toggle chat
+        floatingChatBtn.addEventListener('click', function() {
+            AIState.isChatOpen = !AIState.isChatOpen;
+            chatContainer.classList.toggle('open');
+
+            // Update context on open
+            if (AIState.isChatOpen) {
+                updateChatContext();
+                chatInput.focus();
+            }
+        });
+
+        closeChatBtn.addEventListener('click', function() {
+            AIState.isChatOpen = false;
+            chatContainer.classList.remove('open');
+        });
+
+        // Update chat context
+        function updateChatContext() {
+            const markdownInput = document.getElementById('markdown-input').value;
+            if (markdownInput.trim()) {
+                AIState.currentMarkdown = markdownInput;
+                const words = markdownInput.trim().split(/\s+/).length;
+                docStats.textContent = `${words} words loaded • Ready for questions`;
+            } else {
+                docStats.textContent = 'No document loaded';
+            }
+        }
+
+        // Clear chat
+        clearChatBtn.addEventListener('click', function() {
+            if (confirm('Clear all messages?')) {
+                AIState.chatHistory = [];
+
+                // Remove all message elements except context and suggestions
+                const messages = chatMessages.querySelectorAll('.chat-message');
+                messages.forEach(msg => msg.remove());
+
+                // Show suggested questions again
+                document.getElementById('suggested-questions').style.display = 'flex';
+            }
+        });
+
+        // Add message to chat
+        function addChatMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.appendChild(bubble);
+            messageDiv.appendChild(time);
+
+            chatMessages.appendChild(messageDiv);
+
+            // Auto scroll
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'chat-message assistant';
+            typing.id = 'typing-indicator-msg';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator message-bubble';
+            indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+            typing.appendChild(indicator);
+            chatMessages.appendChild(typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typing = document.getElementById('typing-indicator-msg');
+            if (typing) typing.remove();
+        }
+
+        // Send chat message
+        async function sendChatMessage(question) {
+            if (!question.trim()) return;
+
+            // Update context
+            const markdownInput = document.getElementById('markdown-input').value;
+            if (!markdownInput.trim()) {
+                alert('Please load a document first!');
+                return;
+            }
+
+            AIState.currentMarkdown = markdownInput;
+
+            // Hide suggested questions
+            document.getElementById('suggested-questions').style.display = 'none';
+
+            // Add user message
+            addChatMessage('user', question);
+
+            // Clear input
+            chatInput.value = '';
+            chatSendBtn.disabled = true;
+
+            // Show typing
+            showTypingIndicator();
+
+            try {
+                // Build context-aware prompt
+                const prompt = `You are analyzing the following markdown document:
+
+${AIState.currentMarkdown.substring(0, 10000)}
+
+User question: ${question}
+
+Provide a helpful, accurate answer based on the document content. Keep your response concise and relevant.`;
+
+                const result = await callAI(prompt);
+
+                hideTypingIndicator();
+
+                if (result.success) {
+                    addChatMessage('assistant', result.data);
+
+                    AIState.chatHistory.push({
+                        role: 'user',
+                        content: question,
+                        timestamp: new Date()
+                    });
+                    AIState.chatHistory.push({
+                        role: 'assistant',
+                        content: result.data,
+                        timestamp: new Date()
+                    });
+                } else {
+                    addChatMessage('assistant', '❌ ' + result.error);
+                }
+
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Chat error:', error);
+                addChatMessage('assistant', '❌ Failed to get response. Please try again.');
+            } finally {
+                chatSendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        // Chat send button
+        chatSendBtn.addEventListener('click', function() {
+            sendChatMessage(chatInput.value);
+        });
+
+        // Chat input enter key
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage(chatInput.value);
+            }
+        });
+
+        // Auto-resize chat input
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Suggested questions
+        document.querySelectorAll('.suggested-question').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const question = this.dataset.question;
+                chatInput.value = question;
+                sendChatMessage(question);
+            });
+        });
+
+        // Initialize AI features on page load
+        window.addEventListener('load', function() {
+            console.log('AI features loaded! Powered by Puter.js & GLM-4.7');
+
+            // Update chat context if there's initial content
+            const markdownInput = document.getElementById('markdown-input');
+            if (markdownInput.value.trim()) {
+                updateChatContext();
+            }
+        });
+    </script>
+</body>
+</html>
