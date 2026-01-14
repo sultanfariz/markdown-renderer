@@ -2520,16 +2520,22 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 else if (typeof response === 'object' && response !== null) {
                     console.log('Attempting to extract text from object...');
 
-                    // Try different possible properties
-                    text = response.message
-                        || response.content
-                        || response.text
-                        || response.response
-                        || response.answer
-                        || response.output
-                        || response.result;
-
-                    console.log('After property check, text is:', text, 'Type:', typeof text);
+                    // Check for nested message.content structure (GLM-4.7 format)
+                    if (response.message && response.message.content) {
+                        text = response.message.content;
+                        console.log('Found text in response.message.content');
+                    }
+                    // Try other possible properties
+                    else {
+                        text = response.content
+                            || response.text
+                            || response.message
+                            || response.response
+                            || response.answer
+                            || response.output
+                            || response.result;
+                        console.log('Found text in direct property:', typeof text);
+                    }
 
                     // If still an object or undefined, try to get the first string value
                     if (!text || (typeof text === 'object' && text !== null)) {
@@ -2542,7 +2548,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                     // Last resort: stringify
                     if (!text || typeof text !== 'string') {
                         console.log('Last resort: stringifying object');
-                        text = JSON.stringify(response);
+                        text = JSON.stringify(response, null, 2);
                     }
                 }
 
@@ -2553,7 +2559,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 }
 
                 console.log('=== FINAL EXTRACTED TEXT ===');
-                console.log(text);
+                console.log('Preview:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+                console.log('Full length:', text.length, 'characters');
                 console.log('========================');
 
                 return { success: true, data: text };
