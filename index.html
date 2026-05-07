@@ -924,6 +924,9 @@
                     <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-csv">
                         <span class="material-icons-outlined text-sm align-middle mr-1">table</span>CSV to Markdown
                     </button>
+                    <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-json">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">data_object</span>JSON Formatter
+                    </button>
                 </div>
             </header>
 
@@ -1188,29 +1191,45 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         // Tab switching functionality
         const tabRenderer = document.getElementById('tab-renderer');
         const tabCsv = document.getElementById('tab-csv');
+        const tabJson = document.getElementById('tab-json');
         const rendererPage = document.getElementById('renderer-page');
         const csvPage = document.getElementById('csv-page');
+        const jsonPage = document.getElementById('json-page');
+        const allTabs = [tabRenderer, tabCsv, tabJson];
+
+        function setActiveTab(activeTab) {
+            allTabs.forEach(t => {
+                t.classList.remove('text-primary', 'border-primary');
+                t.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            });
+            activeTab.classList.add('text-primary', 'border-primary');
+            activeTab.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
 
         function switchToRenderer() {
             rendererPage.style.display = 'block';
             csvPage.style.display = 'none';
-            tabRenderer.classList.add('text-primary', 'border-primary');
-            tabRenderer.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
-            tabCsv.classList.remove('text-primary', 'border-primary');
-            tabCsv.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            if (jsonPage) jsonPage.style.display = 'none';
+            setActiveTab(tabRenderer);
         }
 
         function switchToCsv() {
             rendererPage.style.display = 'none';
             csvPage.style.display = 'block';
-            tabCsv.classList.add('text-primary', 'border-primary');
-            tabCsv.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
-            tabRenderer.classList.remove('text-primary', 'border-primary');
-            tabRenderer.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            if (jsonPage) jsonPage.style.display = 'none';
+            setActiveTab(tabCsv);
+        }
+
+        function switchToJson() {
+            rendererPage.style.display = 'none';
+            csvPage.style.display = 'none';
+            if (jsonPage) jsonPage.style.display = 'block';
+            setActiveTab(tabJson);
         }
 
         tabRenderer.addEventListener('click', switchToRenderer);
         tabCsv.addEventListener('click', switchToCsv);
+        tabJson.addEventListener('click', switchToJson);
 
         // CSV to Markdown conversion functions
         function parseCSV(csvText) {
