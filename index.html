@@ -904,6 +904,47 @@
                 width: 100%;
             }
         }
+
+        /* JSON Formatter */
+        .json-pre {
+            font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+        }
+        .json-key { color: #6d28d9; font-weight: 600; }
+        .json-string { color: #059669; }
+        .json-number { color: #d97706; }
+        .json-boolean { color: #2563eb; font-weight: 600; }
+        .json-null { color: #dc2626; font-weight: 600; }
+        .json-punct { color: #6b7280; }
+        .dark .json-key { color: #a78bfa; }
+        .dark .json-string { color: #34d399; }
+        .dark .json-number { color: #fbbf24; }
+        .dark .json-boolean { color: #60a5fa; }
+        .dark .json-null { color: #f87171; }
+        .dark .json-punct { color: #9ca3af; }
+
+        .json-tree { font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace; font-size: 0.875rem; line-height: 1.8; }
+        .json-children { padding-left: 1.25rem; border-left: 1px solid rgba(107,114,128,0.2); margin-left: 0.4rem; }
+        .dark .json-children { border-left-color: rgba(156,163,175,0.12); }
+        .json-toggle {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 0.55rem;
+            color: #9ca3af;
+            width: 0.9rem;
+            text-align: center;
+            user-select: none;
+            vertical-align: middle;
+            margin-right: 0.15rem;
+        }
+        .json-toggle:hover { color: #374151; }
+        .dark .json-toggle:hover { color: #e5e7eb; }
+        .json-summary { font-size: 0.7rem; color: #9ca3af; margin-left: 0.25rem; font-style: italic; }
+        .dark .json-summary { color: #6b7280; }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark transition-colors duration-300">
@@ -1183,6 +1224,56 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 <div class="bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark p-4" id="csv-preview-content">
                 </div>
             </div>
+            </div>
+
+            <div id="json-page" class="hidden">
+                <div id="json-error" class="hidden mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg flex items-start gap-2">
+                    <span class="material-icons-outlined text-red-500 text-base mt-0.5">error_outline</span>
+                    <pre id="json-error-msg" class="text-red-700 dark:text-red-300 text-sm font-mono whitespace-pre-wrap flex-1"></pre>
+                </div>
+                <div class="flex gap-4 -mx-4 -mb-4 px-4 pb-4 min-h-[80vh]">
+                    <!-- Left: Input -->
+                    <div class="w-1/2 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                        <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                            <h2 class="text-lg font-semibold">JSON Input</h2>
+                            <div class="flex items-center gap-2">
+                                <button id="json-sample-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Sample</button>
+                                <button id="json-format-btn" class="px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg shadow hover:bg-opacity-90 focus:outline-none transition-all">Format</button>
+                                <button id="json-minify-btn" class="px-3 py-1.5 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark text-sm font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none transition-all">Minify</button>
+                                <button id="json-clear-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-red-500 transition-colors">Clear</button>
+                            </div>
+                        </div>
+                        <textarea
+                            class="flex-1 w-full p-4 bg-transparent border-0 focus:ring-0 resize-none font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark"
+                            id="json-input"
+                            placeholder="Paste your JSON here... (Ctrl+Enter to format)"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                    <!-- Right: Output -->
+                    <div class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                        <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                            <div class="flex gap-1">
+                                <button id="json-view-formatted-btn" class="px-3 py-1.5 text-sm font-semibold bg-primary text-white rounded-lg transition-all">Formatted</button>
+                                <button id="json-view-tree-btn" class="px-3 py-1.5 text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-all">Tree</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="json-valid-badge" class="hidden text-xs font-semibold px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">✓ Valid</span>
+                                <button id="json-expand-btn" class="hidden px-2 py-1 text-xs text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Expand All</button>
+                                <button id="json-collapse-btn" class="hidden px-2 py-1 text-xs text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Collapse All</button>
+                                <button id="json-copy-btn" class="flex items-center gap-1 px-3 py-1.5 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark text-sm font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none transition-all">
+                                    <span class="material-icons-outlined text-sm">content_copy</span>Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div id="json-formatted-output" class="flex-1 overflow-auto p-4">
+                            <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see output here...</p>
+                        </div>
+                        <div id="json-tree-output" class="hidden flex-1 overflow-auto p-4">
+                            <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see tree view here...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
