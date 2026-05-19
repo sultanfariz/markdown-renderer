@@ -907,6 +907,47 @@
                 width: 100%;
             }
         }
+        /* JSON Formatter */
+        .json-pre {
+            font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+        }
+        .json-key { color: #6d28d9; font-weight: 600; }
+        .json-string { color: #059669; }
+        .json-number { color: #d97706; }
+        .json-boolean { color: #2563eb; font-weight: 600; }
+        .json-null { color: #dc2626; font-weight: 600; }
+        .json-punct { color: #6b7280; }
+        .dark .json-key { color: #a78bfa; }
+        .dark .json-string { color: #34d399; }
+        .dark .json-number { color: #fbbf24; }
+        .dark .json-boolean { color: #60a5fa; }
+        .dark .json-null { color: #f87171; }
+        .dark .json-punct { color: #9ca3af; }
+
+        .json-tree { font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace; font-size: 0.875rem; line-height: 1.8; }
+        .json-children { padding-left: 1.25rem; border-left: 1px solid rgba(107,114,128,0.2); margin-left: 0.4rem; }
+        .dark .json-children { border-left-color: rgba(156,163,175,0.12); }
+        .json-toggle {
+            display: inline-block;
+            cursor: pointer;
+            font-size: 0.55rem;
+            color: #9ca3af;
+            width: 0.9rem;
+            text-align: center;
+            user-select: none;
+            vertical-align: middle;
+            margin-right: 0.15rem;
+        }
+        .json-toggle:hover { color: #374151; }
+        .dark .json-toggle:hover { color: #e5e7eb; }
+        .json-summary { font-size: 0.7rem; color: #9ca3af; margin-left: 0.25rem; font-style: italic; }
+        .dark .json-summary { color: #6b7280; }
+
         /* AI Features Styles */
 
         /* Summary Panel */
@@ -1290,6 +1331,9 @@
                     <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-csv">
                         <span class="material-icons-outlined text-sm align-middle mr-1">table</span>CSV to Markdown
                     </button>
+                    <button class="px-4 py-3 font-semibold text-secondary-text-light dark:text-secondary-text-dark hover:text-text-light dark:hover:text-text-dark border-b-2 border-transparent transition-colors" id="tab-json">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">data_object</span>JSON Formatter
+                    </button>
                 </div>
             </header>
 
@@ -1581,6 +1625,56 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 </div>
             </div>
             </div>
+
+            <div id="json-page" class="hidden">
+                <div id="json-error" class="hidden mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg flex items-start gap-2">
+                    <span class="material-icons-outlined text-red-500 text-base mt-0.5">error_outline</span>
+                    <pre id="json-error-msg" class="text-red-700 dark:text-red-300 text-sm font-mono whitespace-pre-wrap flex-1"></pre>
+                </div>
+                <div class="flex gap-4 -mx-4 -mb-4 px-4 pb-4 min-h-[80vh]">
+                    <!-- Left: Input -->
+                    <div class="w-1/2 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                        <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                            <h2 class="text-lg font-semibold">JSON Input</h2>
+                            <div class="flex items-center gap-2">
+                                <button id="json-sample-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Sample</button>
+                                <button id="json-format-btn" class="px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg shadow hover:bg-opacity-90 focus:outline-none transition-all">Format</button>
+                                <button id="json-minify-btn" class="px-3 py-1.5 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark text-sm font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none transition-all">Minify</button>
+                                <button id="json-clear-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-red-500 transition-colors">Clear</button>
+                            </div>
+                        </div>
+                        <textarea
+                            class="flex-1 w-full p-4 bg-transparent border-0 focus:ring-0 resize-none font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark"
+                            id="json-input"
+                            placeholder="Paste your JSON here... (Ctrl+Enter to format)"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                    <!-- Right: Output -->
+                    <div class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
+                        <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
+                            <div class="flex gap-1">
+                                <button id="json-view-formatted-btn" class="px-3 py-1.5 text-sm font-semibold bg-primary text-white rounded-lg transition-all">Formatted</button>
+                                <button id="json-view-tree-btn" class="px-3 py-1.5 text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-all">Tree</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="json-valid-badge" class="hidden text-xs font-semibold px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">✓ Valid</span>
+                                <button id="json-expand-btn" class="hidden px-2 py-1 text-xs text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Expand All</button>
+                                <button id="json-collapse-btn" class="hidden px-2 py-1 text-xs text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Collapse All</button>
+                                <button id="json-copy-btn" class="flex items-center gap-1 px-3 py-1.5 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark text-sm font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none transition-all">
+                                    <span class="material-icons-outlined text-sm">content_copy</span>Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div id="json-formatted-output" class="flex-1 overflow-auto p-4">
+                            <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see output here...</p>
+                        </div>
+                        <div id="json-tree-output" class="hidden flex-1 overflow-auto p-4">
+                            <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see tree view here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1646,29 +1740,45 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         // Tab switching functionality
         const tabRenderer = document.getElementById('tab-renderer');
         const tabCsv = document.getElementById('tab-csv');
+        const tabJson = document.getElementById('tab-json');
         const rendererPage = document.getElementById('renderer-page');
         const csvPage = document.getElementById('csv-page');
+        const jsonPage = document.getElementById('json-page');
+        const allTabs = [tabRenderer, tabCsv, tabJson];
+
+        function setActiveTab(activeTab) {
+            allTabs.forEach(t => {
+                t.classList.remove('text-primary', 'border-primary');
+                t.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            });
+            activeTab.classList.add('text-primary', 'border-primary');
+            activeTab.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+        }
 
         function switchToRenderer() {
             rendererPage.style.display = 'block';
             csvPage.style.display = 'none';
-            tabRenderer.classList.add('text-primary', 'border-primary');
-            tabRenderer.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
-            tabCsv.classList.remove('text-primary', 'border-primary');
-            tabCsv.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            jsonPage.style.display = 'none';
+            setActiveTab(tabRenderer);
         }
 
         function switchToCsv() {
             rendererPage.style.display = 'none';
             csvPage.style.display = 'block';
-            tabCsv.classList.add('text-primary', 'border-primary');
-            tabCsv.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
-            tabRenderer.classList.remove('text-primary', 'border-primary');
-            tabRenderer.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
+            jsonPage.style.display = 'none';
+            setActiveTab(tabCsv);
+        }
+
+        function switchToJson() {
+            rendererPage.style.display = 'none';
+            csvPage.style.display = 'none';
+            jsonPage.style.display = 'block';
+            setActiveTab(tabJson);
         }
 
         tabRenderer.addEventListener('click', switchToRenderer);
         tabCsv.addEventListener('click', switchToCsv);
+        tabJson.addEventListener('click', switchToJson);
 
         // CSV to Markdown conversion functions
         function parseCSV(csvText) {
@@ -2449,6 +2559,223 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 showCopyFeedback(diagramId, '❌ General error', 'red');
             }
         }
+
+        // ==================== JSON FORMATTER ====================
+        let jsonNodeCounter = 0;
+        let jsonParsedData = null;
+
+        function jsonEscapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function highlightJSON(json) {
+            let result = '';
+            let i = 0;
+            while (i < json.length) {
+                const ch = json[i];
+                if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '\r') {
+                    result += ch; i++; continue;
+                }
+                if ('[]{},:'.includes(ch)) {
+                    result += `<span class="json-punct">${ch}</span>`; i++; continue;
+                }
+                if (ch === '"') {
+                    let str = '"'; i++;
+                    while (i < json.length) {
+                        if (json[i] === '\\') { str += json[i] + json[i + 1]; i += 2; }
+                        else if (json[i] === '"') { str += '"'; i++; break; }
+                        else { str += json[i]; i++; }
+                    }
+                    let j = i;
+                    while (j < json.length && (json[j] === ' ' || json[j] === '\t')) j++;
+                    const cls = json[j] === ':' ? 'json-key' : 'json-string';
+                    result += `<span class="${cls}">${jsonEscapeHTML(str)}</span>`;
+                    continue;
+                }
+                if (ch === '-' || (ch >= '0' && ch <= '9')) {
+                    let num = '';
+                    while (i < json.length && /[-\d.eE+]/.test(json[i])) { num += json[i]; i++; }
+                    result += `<span class="json-number">${num}</span>`;
+                    continue;
+                }
+                if (json.substring(i, i + 4) === 'true') { result += '<span class="json-boolean">true</span>'; i += 4; continue; }
+                if (json.substring(i, i + 5) === 'false') { result += '<span class="json-boolean">false</span>'; i += 5; continue; }
+                if (json.substring(i, i + 4) === 'null') { result += '<span class="json-null">null</span>'; i += 4; continue; }
+                result += jsonEscapeHTML(ch); i++;
+            }
+            return result;
+        }
+
+        function buildJsonNode(value, key, isLast) {
+            const keySpan = key !== null
+                ? `<span class="json-key">&quot;${jsonEscapeHTML(String(key))}&quot;</span><span class="json-punct">: </span>`
+                : '';
+            const comma = isLast ? '' : '<span class="json-punct">,</span>';
+
+            if (value === null) return `<div class="json-row">${keySpan}<span class="json-null">null</span>${comma}</div>`;
+            if (typeof value === 'boolean') return `<div class="json-row">${keySpan}<span class="json-boolean">${value}</span>${comma}</div>`;
+            if (typeof value === 'number') return `<div class="json-row">${keySpan}<span class="json-number">${value}</span>${comma}</div>`;
+            if (typeof value === 'string') return `<div class="json-row">${keySpan}<span class="json-string">&quot;${jsonEscapeHTML(value)}&quot;</span>${comma}</div>`;
+
+            const isArr = Array.isArray(value);
+            const entries = isArr ? value : Object.entries(value);
+            const open = isArr ? '[' : '{';
+            const close = isArr ? ']' : '}';
+
+            if (entries.length === 0) return `<div class="json-row">${keySpan}<span class="json-punct">${open}${close}</span>${comma}</div>`;
+
+            const id = 'jn' + (++jsonNodeCounter);
+            const count = isArr ? `${entries.length} items` : `${entries.length} keys`;
+            const children = isArr
+                ? entries.map((v, idx) => buildJsonNode(v, null, idx === entries.length - 1)).join('')
+                : entries.map(([k, v], idx) => buildJsonNode(v, k, idx === entries.length - 1)).join('');
+
+            return `<div class="json-row"><span class="json-toggle">&#9660;</span>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}</div></div>`;
+        }
+
+        function showJSONError(msg) {
+            document.getElementById('json-error').classList.remove('hidden');
+            document.getElementById('json-error-msg').textContent = msg;
+            document.getElementById('json-valid-badge').classList.add('hidden');
+        }
+
+        function hideJSONError() {
+            document.getElementById('json-error').classList.add('hidden');
+            document.getElementById('json-valid-badge').classList.remove('hidden');
+        }
+
+        function runFormatJSON() {
+            const input = document.getElementById('json-input').value.trim();
+            if (!input) return;
+            try {
+                jsonParsedData = JSON.parse(input);
+                const formatted = JSON.stringify(jsonParsedData, null, 2);
+                document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre">${highlightJSON(formatted)}</pre>`;
+                jsonNodeCounter = 0;
+                document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonParsedData, null, true)}</div>`;
+                hideJSONError();
+            } catch (e) {
+                showJSONError(e.message);
+            }
+        }
+
+        function runMinifyJSON() {
+            const input = document.getElementById('json-input').value.trim();
+            if (!input) return;
+            try {
+                const parsed = JSON.parse(input);
+                const minified = JSON.stringify(parsed);
+                document.getElementById('json-input').value = minified;
+                document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre"><span class="json-string">${jsonEscapeHTML(minified)}</span></pre>`;
+                document.getElementById('json-tree-output').innerHTML = '';
+                hideJSONError();
+            } catch (e) {
+                showJSONError(e.message);
+            }
+        }
+
+        document.getElementById('json-format-btn').addEventListener('click', runFormatJSON);
+        document.getElementById('json-minify-btn').addEventListener('click', runMinifyJSON);
+
+        document.getElementById('json-clear-btn').addEventListener('click', function () {
+            document.getElementById('json-input').value = '';
+            document.getElementById('json-formatted-output').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see output here...</p>';
+            document.getElementById('json-tree-output').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see tree view here...</p>';
+            document.getElementById('json-error').classList.add('hidden');
+            document.getElementById('json-valid-badge').classList.add('hidden');
+            document.getElementById('json-expand-btn').classList.add('hidden');
+            document.getElementById('json-collapse-btn').classList.add('hidden');
+            jsonParsedData = null;
+        });
+
+        document.getElementById('json-sample-btn').addEventListener('click', function () {
+            document.getElementById('json-input').value = JSON.stringify({
+                name: "Jane Smith", age: 32, isActive: true,
+                address: { street: "123 Main St", city: "San Francisco", zip: "94102" },
+                tags: ["developer", "designer"],
+                scores: { typescript: 9.5, python: 8.2, rust: 7.0 },
+                metadata: null
+            }, null, 2);
+            runFormatJSON();
+        });
+
+        document.getElementById('json-copy-btn').addEventListener('click', function () {
+            if (!jsonParsedData) return;
+            const text = JSON.stringify(jsonParsedData, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = this.innerHTML;
+                this.innerHTML = '<span class="material-icons-outlined text-sm">check</span>Copied!';
+                this.classList.add('text-green-600');
+                setTimeout(() => { this.innerHTML = orig; this.classList.remove('text-green-600'); }, 2000);
+            });
+        });
+
+        document.getElementById('json-view-formatted-btn').addEventListener('click', function () {
+            document.getElementById('json-formatted-output').classList.remove('hidden');
+            document.getElementById('json-tree-output').classList.add('hidden');
+            document.getElementById('json-expand-btn').classList.add('hidden');
+            document.getElementById('json-collapse-btn').classList.add('hidden');
+            this.classList.add('bg-primary', 'text-white');
+            this.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark');
+            const treeBtn = document.getElementById('json-view-tree-btn');
+            treeBtn.classList.remove('bg-primary', 'text-white');
+            treeBtn.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark');
+        });
+
+        document.getElementById('json-view-tree-btn').addEventListener('click', function () {
+            document.getElementById('json-tree-output').classList.remove('hidden');
+            document.getElementById('json-formatted-output').classList.add('hidden');
+            if (jsonParsedData !== null) {
+                document.getElementById('json-expand-btn').classList.remove('hidden');
+                document.getElementById('json-collapse-btn').classList.remove('hidden');
+            }
+            this.classList.add('bg-primary', 'text-white');
+            this.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark');
+            const fmtBtn = document.getElementById('json-view-formatted-btn');
+            fmtBtn.classList.remove('bg-primary', 'text-white');
+            fmtBtn.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark');
+        });
+
+        document.getElementById('json-expand-btn').addEventListener('click', function () {
+            document.querySelectorAll('#json-tree-output .json-children').forEach(el => { el.style.display = 'block'; });
+            document.querySelectorAll('#json-tree-output .json-closer').forEach(el => { el.style.display = 'block'; });
+            document.querySelectorAll('#json-tree-output .json-summary').forEach(el => { el.style.display = 'none'; });
+            document.querySelectorAll('#json-tree-output .json-toggle').forEach(el => { el.innerHTML = '&#9660;'; });
+        });
+
+        document.getElementById('json-collapse-btn').addEventListener('click', function () {
+            const nodes = document.querySelectorAll('#json-tree-output .json-children');
+            const closers = document.querySelectorAll('#json-tree-output .json-closer');
+            const summaries = document.querySelectorAll('#json-tree-output .json-summary');
+            const toggles = document.querySelectorAll('#json-tree-output .json-toggle');
+            nodes.forEach((el, i) => { if (i > 0) el.style.display = 'none'; });
+            closers.forEach((el, i) => { if (i > 0) el.style.display = 'none'; });
+            summaries.forEach((el, i) => { if (i > 0) el.style.display = 'inline'; });
+            toggles.forEach((el, i) => { if (i > 0) el.innerHTML = '&#9654;'; });
+        });
+
+        document.getElementById('json-tree-output').addEventListener('click', function (e) {
+            const btn = e.target.closest('.json-toggle');
+            if (!btn) return;
+            const row = btn.parentElement;
+            const childrenEl = Array.from(row.children).find(c => c.classList.contains('json-children'));
+            const closer = Array.from(row.children).find(c => c.classList.contains('json-closer'));
+            const summary = Array.from(row.children).find(c => c.classList.contains('json-summary'));
+            if (!childrenEl) return;
+            const isCollapsed = childrenEl.style.display === 'none';
+            childrenEl.style.display = isCollapsed ? 'block' : 'none';
+            if (closer) closer.style.display = isCollapsed ? 'block' : 'none';
+            if (summary) summary.style.display = isCollapsed ? 'none' : 'inline';
+            btn.innerHTML = isCollapsed ? '&#9660;' : '&#9654;';
+        });
+
+        document.getElementById('json-input').addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runFormatJSON(); }
+        });
 
         // Show feedback when copying
         function showCopyFeedback(diagramId, message, color) {
