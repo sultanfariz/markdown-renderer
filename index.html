@@ -942,7 +942,13 @@
             user-select: none;
             vertical-align: middle;
             margin-right: 0.15rem;
+            background: transparent;
+            border: 0;
+            padding: 0;
+            font: inherit;
         }
+        .json-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
+        .dark .json-toggle:focus-visible { outline-color: #60a5fa; }
         .json-toggle:hover { color: #374151; }
         .dark .json-toggle:hover { color: #e5e7eb; }
         .json-summary { font-size: 0.7rem; color: #9ca3af; margin-left: 0.25rem; font-style: italic; }
@@ -2634,7 +2640,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 ? entries.map((v, idx) => buildJsonNode(v, null, idx === entries.length - 1)).join('')
                 : entries.map(([k, v], idx) => buildJsonNode(v, k, idx === entries.length - 1)).join('');
 
-            return `<div class="json-row"><span class="json-toggle">&#9660;</span>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}</div></div>`;
+            return `<div class="json-row"><button type="button" class="json-toggle" aria-expanded="true">&#9660;</button>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}</div></div>`;
         }
 
         function showJSONError(msg) {
@@ -2667,11 +2673,12 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             const input = document.getElementById('json-input').value.trim();
             if (!input) return;
             try {
-                const parsed = JSON.parse(input);
-                const minified = JSON.stringify(parsed);
+                jsonParsedData = JSON.parse(input);
+                const minified = JSON.stringify(jsonParsedData);
                 document.getElementById('json-input').value = minified;
-                document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre"><span class="json-string">${jsonEscapeHTML(minified)}</span></pre>`;
-                document.getElementById('json-tree-output').innerHTML = '';
+                document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre">${highlightJSON(minified)}</pre>`;
+                jsonNodeCounter = 0;
+                document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonParsedData, null, true)}</div>`;
                 hideJSONError();
             } catch (e) {
                 showJSONError(e.message);
@@ -2705,12 +2712,19 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         document.getElementById('json-copy-btn').addEventListener('click', function () {
             if (!jsonParsedData) return;
+            const button = this;
+            const orig = button.innerHTML;
             const text = JSON.stringify(jsonParsedData, null, 2);
+
             navigator.clipboard.writeText(text).then(() => {
-                const orig = this.innerHTML;
-                this.innerHTML = '<span class="material-icons-outlined text-sm">check</span>Copied!';
-                this.classList.add('text-green-600');
-                setTimeout(() => { this.innerHTML = orig; this.classList.remove('text-green-600'); }, 2000);
+                button.innerHTML = '<span class="material-icons-outlined text-sm">check</span>Copied!';
+                button.classList.add('text-green-600');
+                setTimeout(() => { button.innerHTML = orig; button.classList.remove('text-green-600'); }, 2000);
+            }).catch((err) => {
+                console.error('Clipboard error:', err);
+                button.innerHTML = '<span class="material-icons-outlined text-sm">error_outline</span>Copy failed';
+                button.classList.add('text-red-600');
+                setTimeout(() => { button.innerHTML = orig; button.classList.remove('text-red-600'); }, 2000);
             });
         });
 
@@ -2771,6 +2785,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             if (closer) closer.style.display = isCollapsed ? 'block' : 'none';
             if (summary) summary.style.display = isCollapsed ? 'none' : 'inline';
             btn.innerHTML = isCollapsed ? '&#9660;' : '&#9654;';
+            btn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
         });
 
         document.getElementById('json-input').addEventListener('keydown', function (e) {
