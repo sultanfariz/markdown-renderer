@@ -1,0 +1,65 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build review prompt
+        id: review-prompt
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          PROMPT="Review this pull request for the markdown-renderer project — a plain HTML/CSS/JS tool.
+
+Focus only on real issues. Skip nitpicks. Flag each finding with **[CRITICAL]**, **[HIGH]**, **[MED]**, or **[LOW]**.
+
+**Security**
+- Hardcoded secrets, API keys, or tokens anywhere in the diff
+- \`eval()\`, \`Function()\`, or \`innerHTML\` on untrusted input (XSS vectors)
+- External script/style loaded over HTTP instead of HTTPS
+- Any \`postMessage\` handler that doesn't validate \`event.origin\`
+
+**HTML / Accessibility**
+- Missing \`alt\` text on \`<img>\` elements
+- Interactive elements without keyboard accessibility (\`tabindex\`, ARIA roles)
+- Broken semantic structure (e.g. heading hierarchy skips levels)
+- \`<form>\` elements missing \`method\` or \`action\` where relevant
+
+**JavaScript**
+- Unhandled promise rejections or missing \`catch\` on \`async\` calls
+- Global variable pollution (variables attached to \`window\` unnecessarily)
+- \`console.log\` / debug statements left in
+- DOM manipulation that could throw if the element doesn't exist
+
+**General**
+- Files that shouldn't be committed (.env, credentials, build artifacts)
+
+Review PR: https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+
+          {
+            printf 'prompt<<PROMPT_EOF\n'
+            printf '%s\n' "$PROMPT"
+            printf 'PROMPT_EOF\n'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: ${{ steps.review-prompt.outputs.prompt }}
+          allowed_tools: "Bash(git diff*),Bash(git log*),Bash(gh pr*),Bash(cat*),Bash(find*)"
+          use_sticky_comment: true
+          show_full_output: true
