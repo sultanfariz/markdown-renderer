@@ -1647,6 +1647,10 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                                 <button id="json-format-btn" class="px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg shadow hover:bg-opacity-90 focus:outline-none transition-all">Format</button>
                                 <button id="json-minify-btn" class="px-3 py-1.5 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark text-sm font-semibold rounded-lg border border-border-light dark:border-border-dark hover:bg-opacity-70 focus:outline-none transition-all">Minify</button>
                                 <button id="json-clear-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-red-500 transition-colors">Clear</button>
+                                <button id="json-share-btn" class="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-700 focus:outline-none transition-all">
+                                    <span class="material-icons-outlined text-sm">share</span>
+                                    <span>Share</span>
+                                </button>
                             </div>
                         </div>
                         <textarea
@@ -2170,6 +2174,88 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             }
         }
 
+        // Share JSON — two-tier: URL param for small JSON, anonymous Gist for large
+        async function shareJSON() {
+            const input = document.getElementById('json-input').value;
+
+            if (!input.trim()) {
+                alert('Please enter some JSON content first!');
+                return;
+            }
+
+            const shareBtn = document.getElementById('json-share-btn');
+            const originalHTML = shareBtn.innerHTML;
+
+            const resetBtn = () => {
+                shareBtn.innerHTML = originalHTML;
+                shareBtn.classList.remove('bg-green-500');
+                shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                shareBtn.disabled = false;
+            };
+
+            const showSuccess = (label) => {
+                shareBtn.innerHTML = `<span class="material-icons-outlined text-sm">check</span><span>${label}</span>`;
+                shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                shareBtn.classList.add('bg-green-500');
+                shareBtn.disabled = false;
+                setTimeout(resetBtn, 3000);
+            };
+
+            const copyAndShow = (url, label) => {
+                navigator.clipboard.writeText(url).then(() => {
+                    showSuccess(label);
+                }).catch(() => {
+                    resetBtn();
+                    prompt('Copy this URL to share:', url);
+                });
+            };
+
+            try {
+                shareBtn.innerHTML = '<span class="material-icons-outlined text-sm animate-spin">autorenew</span><span>Checking...</span>';
+                shareBtn.disabled = true;
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                const rawSize = new Blob([input]).size;
+                const baseUrl = window.location.origin + window.location.pathname;
+
+                // Tier 1: URL param for small JSON (raw < 25KB)
+                if (rawSize <= 25000) {
+                    const compressed = pako.deflate(input, { level: 9 });
+                    if (compressed.length <= 6000) {
+                        const encoded = bytesToBase64url(compressed);
+                        const shareUrl = `${baseUrl}?json=${encoded}`;
+                        const ratio = Math.max(0, ((1 - compressed.length / rawSize) * 100)).toFixed(1);
+                        copyAndShow(shareUrl, `Copied! (${ratio}% smaller)`);
+                        return;
+                    }
+                }
+
+                // Tier 2: Anonymous GitHub Gist for large JSON
+                shareBtn.innerHTML = '<span class="material-icons-outlined text-sm animate-spin">autorenew</span><span>Uploading to Gist...</span>';
+
+                const response = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+                    body: JSON.stringify({ public: true, files: { 'data.json': { content: input } } })
+                });
+
+                if (!response.ok) throw new Error(`Gist API error: ${response.status}`);
+
+                const gist = await response.json();
+                copyAndShow(gist.html_url, 'Shared via Gist ↗');
+
+            } catch (error) {
+                console.error('Error sharing JSON:', error);
+                // Last-resort fallback: copy raw JSON to clipboard
+                navigator.clipboard.writeText(input).then(() => {
+                    showSuccess('Copied raw JSON');
+                }).catch(() => {
+                    resetBtn();
+                    alert('Failed to share JSON. Content may be too large.');
+                });
+            }
+        }
+
         // Load markdown from URL parameter with pako decompression
         function loadFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -2194,6 +2280,31 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 } catch (error) {
                     console.error('Error loading markdown from URL:', error);
                 }
+            }
+        }
+
+        // Load JSON from URL parameter with pako decompression
+        function loadJSONFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedJSON = urlParams.get('json');
+
+            if (!encodedJSON) return;
+
+            try {
+                const compressed = base64urlToBytes(encodedJSON);
+                const decompressed = pako.inflate(new Uint8Array(compressed), { to: 'string' });
+
+                if (!decompressed) {
+                    console.error('Failed to decode JSON from URL');
+                    return;
+                }
+
+                switchToJson();
+                document.getElementById('json-input').value = decompressed;
+                setTimeout(() => runFormatJSON(), 100);
+
+            } catch (error) {
+                console.error('Error loading JSON from URL:', error);
             }
         }
 
@@ -2345,12 +2456,12 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         // Auto-render on page load
         window.addEventListener('load', function() {
-            // First check if there's shared markdown in the URL
-            loadFromURL();
+            loadFromURL();       // handles ?md=
+            loadJSONFromURL();   // handles ?json=
 
-            // If no URL parameter, render the default content
+            // Only render default markdown if no shared content is being loaded
             const urlParams = new URLSearchParams(window.location.search);
-            if (!urlParams.get('md')) {
+            if (!urlParams.get('md') && !urlParams.get('json')) {
                 setTimeout(renderMarkdown, 500);
             }
         });
@@ -2791,6 +2902,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         document.getElementById('json-input').addEventListener('keydown', function (e) {
             if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runFormatJSON(); }
         });
+
+        document.getElementById('json-share-btn').addEventListener('click', shareJSON);
 
         // Show feedback when copying
         function showCopyFeedback(diagramId, message, color) {
