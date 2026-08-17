@@ -1786,9 +1786,41 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             setActiveTab(tabJson);
         }
 
-        tabRenderer.addEventListener('click', switchToRenderer);
-        tabCsv.addEventListener('click', switchToCsv);
-        tabJson.addEventListener('click', switchToJson);
+        // Hash-based routing configuration
+        const tabHashMapping = {
+            '': switchToRenderer,           // Default tab
+            'markdown-renderer': switchToRenderer,
+            'csv-to-markdown': switchToCsv,
+            'json-formatter': switchToJson
+        };
+
+        // Function to switch tab and update hash
+        function switchTabWithHash(hashValue) {
+            const switchFunction = tabHashMapping[hashValue];
+            if (switchFunction) {
+                switchFunction();
+            }
+        }
+
+        // Enhanced tab click handlers to update hash
+        tabRenderer.addEventListener('click', function() {
+            switchToRenderer();
+            history.replaceState(null, null, '#markdown-renderer');
+        });
+        tabCsv.addEventListener('click', function() {
+            switchToCsv();
+            history.replaceState(null, null, '#csv-to-markdown');
+        });
+        tabJson.addEventListener('click', function() {
+            switchToJson();
+            history.replaceState(null, null, '#json-formatter');
+        });
+
+        // Handle hash changes (including back/forward navigation)
+        window.addEventListener('hashchange', function() {
+            const hash = window.location.hash.slice(1); // Remove '#'
+            switchTabWithHash(hash);
+        });
 
         // CSV to Markdown conversion functions
         function parseCSV(csvText) {
@@ -2456,6 +2488,15 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         // Auto-render on page load
         window.addEventListener('load', function() {
+            // Handle hash-based routing
+            const initialHash = window.location.hash.slice(1); // Remove '#'
+            if (initialHash && tabHashMapping[initialHash]) {
+                switchTabWithHash(initialHash);
+            } else {
+                // Set default hash if none present
+                history.replaceState(null, null, '#markdown-renderer');
+            }
+
             loadFromURL();       // handles ?md=
             loadJSONFromURL();   // handles ?json=
 
