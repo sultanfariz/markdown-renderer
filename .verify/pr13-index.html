@@ -1755,16 +1755,14 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         const csvPage = document.getElementById('csv-page');
         const jsonPage = document.getElementById('json-page');
         const allTabs = [tabRenderer, tabCsv, tabJson];
-        let activeTab = tabRenderer;
 
-        function setActiveTab(activeTabElement) {
+        function setActiveTab(activeTab) {
             allTabs.forEach(t => {
                 t.classList.remove('text-primary', 'border-primary');
                 t.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
             });
-            activeTabElement.classList.add('text-primary', 'border-primary');
-            activeTabElement.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
-            activeTab = activeTabElement;
+            activeTab.classList.add('text-primary', 'border-primary');
+            activeTab.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark', 'border-transparent');
         }
 
         function switchToRenderer() {
@@ -1788,44 +1786,40 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             setActiveTab(tabJson);
         }
 
-        // Hash-based routing configuration.
-        // Single source of truth: hash fragment (without '#') -> { tab, switch function }
+        // Hash-based routing configuration
         const tabHashMapping = {
-            '': { tab: tabRenderer, switchFn: switchToRenderer },            // Default tab
-            'markdown-renderer': { tab: tabRenderer, switchFn: switchToRenderer },
-            'csv-to-markdown': { tab: tabCsv, switchFn: switchToCsv },
-            'json-formatter': { tab: tabJson, switchFn: switchToJson }
+            '': switchToRenderer,           // Default tab
+            'markdown-renderer': switchToRenderer,
+            'csv-to-markdown': switchToCsv,
+            'json-formatter': switchToJson
         };
 
-        // Switch to the tab named by a hash fragment (without '#')
+        // Function to switch tab and update hash
         function switchTabWithHash(hashValue) {
-            const entry = tabHashMapping[hashValue];
-            if (!entry) return;
-
-            // Re-entrancy guard: a tab click switches the tab directly, and the
-            // hashchange queued by pushState fires afterwards — skip if the
-            // requested tab is already active.
-            if (entry.tab === activeTab) return;
-
-            entry.switchFn();
+            const switchFunction = tabHashMapping[hashValue];
+            if (switchFunction) {
+                switchFunction();
+            }
         }
 
-        // Tab clicks switch the tab and push a history entry, so the Back button
-        // returns to the previous tab instead of leaving the site. Handlers are
-        // derived from tabHashMapping (single source of truth for hash strings).
-        for (const [hash, entry] of Object.entries(tabHashMapping)) {
-            if (!hash) continue; // '' is the default hash, not a clickable tab
-            entry.tab.addEventListener('click', function() {
-                entry.switchFn();
-                if (window.location.hash !== '#' + hash) {
-                    history.pushState(null, null, '#' + hash);
-                }
-            });
-        }
+        // Enhanced tab click handlers to update hash
+        tabRenderer.addEventListener('click', function() {
+            switchToRenderer();
+            history.replaceState(null, null, '#markdown-renderer');
+        });
+        tabCsv.addEventListener('click', function() {
+            switchToCsv();
+            history.replaceState(null, null, '#csv-to-markdown');
+        });
+        tabJson.addEventListener('click', function() {
+            switchToJson();
+            history.replaceState(null, null, '#json-formatter');
+        });
 
         // Handle hash changes (including back/forward navigation)
         window.addEventListener('hashchange', function() {
-            switchTabWithHash(window.location.hash.slice(1)); // Remove '#'
+            const hash = window.location.hash.slice(1); // Remove '#'
+            switchTabWithHash(hash);
         });
 
         // CSV to Markdown conversion functions
@@ -2494,24 +2488,17 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         // Auto-render on page load
         window.addEventListener('load', function() {
-            loadFromURL();       // handles ?md=
-            loadJSONFromURL();   // handles ?json=
-
-            // Hash routing runs AFTER the URL-param handlers so the tab always
-            // matches the URL hash — e.g. /?json=... stays on the JSON tab and
-            // ends up with #json-formatter instead of the default #markdown-renderer.
+            // Handle hash-based routing
             const initialHash = window.location.hash.slice(1); // Remove '#'
             if (initialHash && tabHashMapping[initialHash]) {
                 switchTabWithHash(initialHash);
             } else {
-                // No (or unknown) hash: pin the URL to the tab that is currently
-                // active. replaceState avoids adding a history entry on load.
-                const activeHash = Object.keys(tabHashMapping)
-                    .find(h => h && tabHashMapping[h].tab === activeTab);
-                if (activeHash && window.location.hash !== '#' + activeHash) {
-                    history.replaceState(null, null, '#' + activeHash);
-                }
+                // Set default hash if none present
+                history.replaceState(null, null, '#markdown-renderer');
             }
+
+            loadFromURL();       // handles ?md=
+            loadJSONFromURL();   // handles ?json=
 
             // Only render default markdown if no shared content is being loaded
             const urlParams = new URLSearchParams(window.location.search);
