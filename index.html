@@ -2964,7 +2964,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         });
 
         document.getElementById('json-input').addEventListener('keydown', function (e) {
-            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runFormatJSON(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runFormatJSON(); }
         });
 
         document.getElementById('json-share-btn').addEventListener('click', shareJSON);
