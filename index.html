@@ -922,12 +922,14 @@
         .json-boolean { color: #2563eb; font-weight: 600; }
         .json-null { color: #dc2626; font-weight: 600; }
         .json-punct { color: #6b7280; }
+        .json-comment { color: #8b91a0; font-style: italic; white-space: pre-wrap; }
         .dark .json-key { color: #a78bfa; }
         .dark .json-string { color: #34d399; }
         .dark .json-number { color: #fbbf24; }
         .dark .json-boolean { color: #60a5fa; }
         .dark .json-null { color: #f87171; }
         .dark .json-punct { color: #9ca3af; }
+        .dark .json-comment { color: #8b949e; }
 
         .json-tree { font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace; font-size: 0.875rem; line-height: 1.8; }
         .json-children { padding-left: 1.25rem; border-left: 1px solid rgba(107,114,128,0.2); margin-left: 0.4rem; }
@@ -1656,7 +1658,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                         <textarea
                             class="flex-1 w-full p-4 bg-transparent border-0 focus:ring-0 resize-none font-mono text-sm leading-6 text-text-light dark:text-text-dark placeholder-secondary-text-light dark:placeholder-secondary-text-dark"
                             id="json-input"
-                            placeholder="Paste your JSON here... (Ctrl+Enter to format)"
+                            placeholder="Paste your JSON here... (Ctrl+Enter to format · // and /* */ comments supported)"
                             spellcheck="false"
                         ></textarea>
                     </div>
@@ -2744,6 +2746,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         // ==================== JSON FORMATTER ====================
         let jsonNodeCounter = 0;
         let jsonParsedData = null;
+        let jsonDoc = null;
+        let jsonFormattedText = '';   // last formatted output, comments included; used by Copy
 
         function jsonEscapeHTML(str) {
             return String(str)
@@ -2751,6 +2755,267 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
+        }
+
+        // ----- JSONC support: // line comments, /* block */ comments, trailing commas -----
+        // JSON.parse is replaced by a small recursive-descent parser so comments can be
+        // captured (instead of silently dropped) and rendered next to the data they annotate.
+        //
+        // Parsed document: { root, leading, trailing, hasComments, value }
+        // Nodes:
+        //   { kind: 'value',  value }                                        primitives
+        //   { kind: 'object', entries: [{ key, value, leading, trailing }], dangling: [] }
+        //   { kind: 'array',  entries: [{ value, leading, trailing }],      dangling: [] }
+        // A comment is { text, sameLine } holding its raw source text ('// x' or '/* x */').
+        // Comments attach to the entry they follow or precede; comments inside an empty
+        // container, or after its last entry, are kept on the container as `dangling`.
+        const JSONC_NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
+
+        function jsoncParse(text) {
+            const lineStarts = [0];
+            for (let k = 0; k < text.length; k++) {
+                if (text[k] === '\n') lineStarts.push(k + 1);
+            }
+            let i = 0;
+            let lastSigLine = 0;    // line of the last significant token consumed
+            let hasComments = false;
+
+            function lineOf(pos) {
+                let lo = 0, hi = lineStarts.length - 1;
+                while (lo < hi) {
+                    const mid = (lo + hi + 1) >> 1;
+                    if (lineStarts[mid] <= pos) lo = mid; else hi = mid - 1;
+                }
+                return lo;
+            }
+
+            function error(msg, pos) {
+                const p = Math.min(typeof pos === 'number' ? pos : i, text.length);
+                const line = lineOf(p);
+                throw new Error(`${msg} at line ${line + 1}, column ${p - lineStarts[line] + 1}`);
+            }
+
+            function describe(pos) {
+                if (pos >= text.length) return 'end of input';
+                if (text[pos] === '\n') return 'end of line';
+                return `'${text[pos]}'`;
+            }
+
+            // Whitespace + comments. Comments on the same line as the last significant token
+            // belong to the entry before them, everything else to the entry after them.
+            function skipTrivia() {
+                const sameLine = [], before = [];
+                for (;;) {
+                    while (i < text.length && (text[i] === ' ' || text[i] === '\t' || text[i] === '\n' || text[i] === '\r')) i++;
+                    if (text[i] !== '/') break;
+                    let comment;
+                    if (text[i + 1] === '/') {
+                        const start = i;
+                        while (i < text.length && text[i] !== '\n') i++;
+                        comment = { text: text.slice(start, i).replace(/\s+$/, ''), sameLine: lineOf(start) === lastSigLine };
+                    } else if (text[i + 1] === '*') {
+                        const start = i;
+                        const end = text.indexOf('*/', i + 2);
+                        if (end === -1) error('Unterminated block comment', start);
+                        i = end + 2;
+                        comment = { text: text.slice(start, i), sameLine: lineOf(start) === lastSigLine };
+                    } else {
+                        break;
+                    }
+                    (comment.sameLine ? sameLine : before).push(comment);
+                    hasComments = true;
+                }
+                return { sameLine: sameLine, before: before };
+            }
+
+            function parseString() {
+                const start = i;
+                i++;
+                for (;;) {
+                    if (i >= text.length) error('Unterminated string', start);
+                    const ch = text[i];
+                    if (ch === '"') { i++; break; }
+                    if (ch === '\\') {
+                        const esc = text[i + 1];
+                        if (esc === 'u') {
+                            if (!/^[0-9a-fA-F]{4}$/.test(text.slice(i + 2, i + 6))) error(`Invalid unicode escape '\\u${text.slice(i + 2, i + 6)}'`, i);
+                            i += 6;
+                        } else if (esc && '"\\/bfnrt'.includes(esc)) {
+                            i += 2;
+                        } else {
+                            error(`Invalid escape sequence '\\${esc === undefined ? '' : esc}'`, i);
+                        }
+                        continue;
+                    }
+                    if (ch === '\n' || ch === '\r') error('Unterminated string', start);
+                    if (ch < ' ') error('Invalid control character in string', i);
+                    i++;
+                }
+                lastSigLine = lineOf(i - 1);
+                const raw = text.slice(start, i);
+                return JSON.parse(raw);
+            }
+
+            function parseNumber() {
+                const start = i;
+                JSONC_NUMBER.lastIndex = i;
+                const match = JSONC_NUMBER.exec(text);
+                if (!match) error(`Invalid number near ${describe(start)}`, start);
+                i += match[0].length;
+                lastSigLine = lineOf(i - 1);
+                return Number(match[0]);
+            }
+
+            function parseValue() {
+                if (i >= text.length) error('Unexpected end of input', i);
+                const ch = text[i];
+                if (ch === '{') return parseObject();
+                if (ch === '[') return parseArray();
+                if (ch === '"') return { kind: 'value', value: parseString() };
+                if (ch === '-' || (ch >= '0' && ch <= '9')) return { kind: 'value', value: parseNumber() };
+                if (text.startsWith('true', i)) { i += 4; lastSigLine = lineOf(i - 1); return { kind: 'value', value: true }; }
+                if (text.startsWith('false', i)) { i += 5; lastSigLine = lineOf(i - 1); return { kind: 'value', value: false }; }
+                if (text.startsWith('null', i)) { i += 4; lastSigLine = lineOf(i - 1); return { kind: 'value', value: null }; }
+                error(`Unexpected token ${describe(i)}`, i);
+            }
+
+            function parseObject() {
+                const node = { kind: 'object', entries: [], dangling: [] };
+                i++;    // '{'
+                lastSigLine = lineOf(i - 1);
+                let pending = [];
+                let entry = null;
+                for (;;) {
+                    const t = skipTrivia();
+                    if (entry) entry.trailing = entry.trailing.concat(t.sameLine);
+                    else pending = pending.concat(t.sameLine);
+                    pending = pending.concat(t.before);
+                    if (i >= text.length) error(`Unexpected end of input: expected a property name or '}'`, i);
+                    if (text[i] === '}') { i++; lastSigLine = lineOf(i - 1); node.dangling = pending; return node; }
+                    if (text[i] !== '"') error(`Expected a property name in double quotes but found ${describe(i)}`, i);
+                    const key = parseString();
+                    let between = skipTrivia();
+                    pending = pending.concat(between.sameLine, between.before);
+                    if (text[i] !== ':') error(`Expected ':' after property name but found ${describe(i)}`, i);
+                    i++; lastSigLine = lineOf(i - 1);
+                    between = skipTrivia();
+                    pending = pending.concat(between.sameLine, between.before);
+                    entry = { key: key, value: parseValue(), leading: pending, trailing: [] };
+                    pending = [];
+                    node.entries.push(entry);
+                    const after = skipTrivia();
+                    entry.trailing = entry.trailing.concat(after.sameLine);
+                    pending = pending.concat(after.before);
+                    if (text[i] === ',') { i++; lastSigLine = lineOf(i - 1); continue; }    // trailing commas are accepted
+                    if (text[i] === '}') { i++; lastSigLine = lineOf(i - 1); node.dangling = pending; return node; }
+                    error(`Expected ',' or '}' after property value but found ${describe(i)}`, i);
+                }
+            }
+
+            function parseArray() {
+                const node = { kind: 'array', entries: [], dangling: [] };
+                i++;    // '['
+                lastSigLine = lineOf(i - 1);
+                let pending = [];
+                let entry = null;
+                for (;;) {
+                    const t = skipTrivia();
+                    if (entry) entry.trailing = entry.trailing.concat(t.sameLine);
+                    else pending = pending.concat(t.sameLine);
+                    pending = pending.concat(t.before);
+                    if (i >= text.length) error(`Unexpected end of input: expected a value or ']'`, i);
+                    if (text[i] === ']') { i++; lastSigLine = lineOf(i - 1); node.dangling = pending; return node; }
+                    entry = { value: parseValue(), leading: pending, trailing: [] };
+                    pending = [];
+                    node.entries.push(entry);
+                    const after = skipTrivia();
+                    entry.trailing = entry.trailing.concat(after.sameLine);
+                    pending = pending.concat(after.before);
+                    if (text[i] === ',') { i++; lastSigLine = lineOf(i - 1); continue; }    // trailing commas are accepted
+                    if (text[i] === ']') { i++; lastSigLine = lineOf(i - 1); node.dangling = pending; return node; }
+                    error(`Expected ',' or ']' after array element but found ${describe(i)}`, i);
+                }
+            }
+
+            const leading = skipTrivia();
+            const root = parseValue();
+            const trailing = skipTrivia();
+            if (i < text.length) error(`Unexpected token ${describe(i)} after the top-level value`, i);
+            return {
+                root: root,
+                leading: leading.sameLine.concat(leading.before),
+                trailing: trailing.sameLine.concat(trailing.before),
+                hasComments: hasComments,
+                value: jsoncPlainValue(root)
+            };
+        }
+
+        // The plain data the way JSON.parse would produce it (duplicate keys keep the last
+        // occurrence and property order matches JSON.parse), used by Minify/Copy and by the
+        // checks that only care whether something was parsed at all.
+        function jsoncPlainValue(node) {
+            if (node.kind === 'value') return node.value;
+            if (node.kind === 'array') return node.entries.map(e => jsoncPlainValue(e.value));
+            const obj = {};
+            node.entries.forEach(e => { obj[e.key] = jsoncPlainValue(e.value); });
+            return obj;
+        }
+
+        // JSON.parse enumerates array-index keys first, in ascending order, then the
+        // remaining keys in insertion order. Duplicate keys collapse to the last one.
+        function jsonOrderEntries(entries) {
+            const indexed = [], rest = [], seen = new Set();
+            for (let k = entries.length - 1; k >= 0; k--) {
+                const entry = entries[k];
+                if (seen.has(entry.key)) continue;
+                seen.add(entry.key);
+                (jsonIsArrayIndex(entry.key) ? indexed : rest).unshift(entry);
+            }
+            indexed.sort((a, b) => Number(a.key) - Number(b.key));
+            return indexed.concat(rest);
+        }
+
+        function jsonIsArrayIndex(key) {
+            if (!/^(0|[1-9]\d*)$/.test(key)) return false;
+            return Number(key) <= 4294967294;
+        }
+
+        // Trailing comments sit on one line, so line comments must come last.
+        function jsoncTrailingText(comments) {
+            const block = comments.filter(c => c.text.startsWith('/*'));
+            const line = comments.filter(c => !c.text.startsWith('/*'));
+            return block.concat(line).map(c => c.text).join(' ');
+        }
+
+        // Serializes the parsed document back to text, keeping the comments. Layout matches
+        // JSON.stringify(data, null, 2) for comment-free input. Block comments are emitted
+        // verbatim; trailing commas are normalized away.
+        function jsoncStringify(node, depth) {
+            if (node.kind === 'value') return JSON.stringify(node.value);
+            const isArr = node.kind === 'array';
+            const entries = isArr ? node.entries : jsonOrderEntries(node.entries);
+            const dangling = node.dangling || [];
+            if (entries.length === 0 && dangling.length === 0) return isArr ? '[]' : '{}';
+
+            const indent = '  '.repeat(depth + 1);
+            const lines = [];
+            entries.forEach((entry, idx) => {
+                entry.leading.forEach(c => lines.push(indent + c.text));
+                let line = (isArr ? '' : JSON.stringify(entry.key) + ': ') + jsoncStringify(entry.value, depth + 1);
+                if (idx < entries.length - 1) line += ',';
+                if (entry.trailing.length) line += ' ' + jsoncTrailingText(entry.trailing);
+                lines.push(indent + line);
+            });
+            dangling.forEach(c => lines.push(indent + c.text));
+            return (isArr ? '[' : '{') + '\n' + lines.join('\n') + '\n' + '  '.repeat(depth) + (isArr ? ']' : '}');
+        }
+
+        function jsoncFormatDocument(doc) {
+            let out = '';
+            doc.leading.forEach(c => { out += c.text + '\n'; });
+            out += jsoncStringify(doc.root, 0);
+            doc.trailing.forEach(c => { out += (c.sameLine ? ' ' : '\n') + c.text; });
+            return out;
         }
 
         function highlightJSON(json) {
@@ -2763,6 +3028,18 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 }
                 if ('[]{},:'.includes(ch)) {
                     result += `<span class="json-punct">${ch}</span>`; i++; continue;
+                }
+                if (ch === '/' && (json[i + 1] === '/' || json[i + 1] === '*')) {
+                    let comment = '';
+                    if (json[i + 1] === '/') {
+                        while (i < json.length && json[i] !== '\n') { comment += json[i]; i++; }
+                    } else {
+                        const end = json.indexOf('*/', i + 2);
+                        comment = end === -1 ? json.slice(i) : json.slice(i, end + 2);
+                        i += comment.length;
+                    }
+                    result += `<span class="json-comment">${jsonEscapeHTML(comment)}</span>`;
+                    continue;
                 }
                 if (ch === '"') {
                     let str = '"'; i++;
@@ -2791,31 +3068,57 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             return result;
         }
 
-        function buildJsonNode(value, key, isLast) {
+        function jsonCommentRows(comments) {
+            return (comments || []).map(c =>
+                `<div class="json-row"><span class="json-comment">${jsonEscapeHTML(c.text)}</span></div>`
+            ).join('');
+        }
+
+        function jsonCommentInline(comments) {
+            if (!comments || !comments.length) return '';
+            return ' ' + comments.map(c => `<span class="json-comment">${jsonEscapeHTML(c.text)}</span>`).join(' ');
+        }
+
+        // `meta` carries the comments attached to this node: leading comments become their own
+        // rows above it, trailing comments are appended to the row itself.
+        function buildJsonNode(node, key, isLast, meta) {
+            const leadingRows = jsonCommentRows(meta && meta.leading);
+            const inlineComments = jsonCommentInline(meta && meta.trailing);
             const keySpan = key !== null
                 ? `<span class="json-key">&quot;${jsonEscapeHTML(String(key))}&quot;</span><span class="json-punct">: </span>`
                 : '';
             const comma = isLast ? '' : '<span class="json-punct">,</span>';
+            const row = inner => `${leadingRows}<div class="json-row">${keySpan}${inner}${comma}${inlineComments}</div>`;
 
-            if (value === null) return `<div class="json-row">${keySpan}<span class="json-null">null</span>${comma}</div>`;
-            if (typeof value === 'boolean') return `<div class="json-row">${keySpan}<span class="json-boolean">${value}</span>${comma}</div>`;
-            if (typeof value === 'number') return `<div class="json-row">${keySpan}<span class="json-number">${value}</span>${comma}</div>`;
-            if (typeof value === 'string') return `<div class="json-row">${keySpan}<span class="json-string">&quot;${jsonEscapeHTML(value)}&quot;</span>${comma}</div>`;
+            if (node.kind === 'value') {
+                const value = node.value;
+                if (value === null) return row('<span class="json-null">null</span>');
+                if (typeof value === 'boolean') return row(`<span class="json-boolean">${value}</span>`);
+                if (typeof value === 'number') return row(`<span class="json-number">${value}</span>`);
+                if (typeof value === 'string') return row(`<span class="json-string">&quot;${jsonEscapeHTML(value)}&quot;</span>`);
+            }
 
-            const isArr = Array.isArray(value);
-            const entries = isArr ? value : Object.entries(value);
+            const isArr = node.kind === 'array';
+            const entries = isArr ? node.entries : jsonOrderEntries(node.entries);
             const open = isArr ? '[' : '{';
             const close = isArr ? ']' : '}';
+            const dangling = jsonCommentRows(node.dangling);
 
-            if (entries.length === 0) return `<div class="json-row">${keySpan}<span class="json-punct">${open}${close}</span>${comma}</div>`;
+            if (entries.length === 0) {
+                if (!dangling) return row(`<span class="json-punct">${open}${close}</span>`);
+                // Comments left inside an otherwise empty container get their own block.
+                return `${leadingRows}<div class="json-row">${keySpan}<span class="json-punct">${open}</span></div>`
+                    + `<div class="json-children">${dangling}</div>`
+                    + `<div class="json-row"><span class="json-punct">${close}</span>${comma}${inlineComments}</div>`;
+            }
 
             const id = 'jn' + (++jsonNodeCounter);
             const count = isArr ? `${entries.length} items` : `${entries.length} keys`;
-            const children = isArr
-                ? entries.map((v, idx) => buildJsonNode(v, null, idx === entries.length - 1)).join('')
-                : entries.map(([k, v], idx) => buildJsonNode(v, k, idx === entries.length - 1)).join('');
+            const children = entries
+                .map((entry, idx) => buildJsonNode(entry.value, isArr ? null : entry.key, idx === entries.length - 1, entry))
+                .join('');
 
-            return `<div class="json-row"><button type="button" class="json-toggle" aria-expanded="true">&#9660;</button>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}</div></div>`;
+            return `${leadingRows}<div class="json-row"><button type="button" class="json-toggle" aria-expanded="true">&#9660;</button>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}${dangling}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}${inlineComments}</div></div>`;
         }
 
         function showJSONError(msg) {
@@ -2824,21 +3127,29 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             document.getElementById('json-valid-badge').classList.add('hidden');
         }
 
-        function hideJSONError() {
+        function hideJSONError(isJSONC) {
             document.getElementById('json-error').classList.add('hidden');
-            document.getElementById('json-valid-badge').classList.remove('hidden');
+            const badge = document.getElementById('json-valid-badge');
+            badge.textContent = isJSONC ? '✓ Valid JSONC' : '✓ Valid';
+            badge.classList.remove('hidden');
+        }
+
+        function renderJSONOutputs(doc) {
+            const formatted = jsoncFormatDocument(doc);
+            jsonFormattedText = formatted;
+            document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre">${highlightJSON(formatted)}</pre>`;
+            jsonNodeCounter = 0;
+            document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(doc.root, null, true, doc)}</div>`;
         }
 
         function runFormatJSON() {
             const input = document.getElementById('json-input').value.trim();
             if (!input) return;
             try {
-                jsonParsedData = JSON.parse(input);
-                const formatted = JSON.stringify(jsonParsedData, null, 2);
-                document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre">${highlightJSON(formatted)}</pre>`;
-                jsonNodeCounter = 0;
-                document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonParsedData, null, true)}</div>`;
-                hideJSONError();
+                jsonDoc = jsoncParse(input);
+                jsonParsedData = jsonDoc.value;
+                renderJSONOutputs(jsonDoc);
+                hideJSONError(jsonDoc.hasComments);
             } catch (e) {
                 showJSONError(e.message);
             }
@@ -2848,13 +3159,16 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             const input = document.getElementById('json-input').value.trim();
             if (!input) return;
             try {
-                jsonParsedData = JSON.parse(input);
-                const minified = JSON.stringify(jsonParsedData);
+                const minified = JSON.stringify(jsoncParse(input).value);
                 document.getElementById('json-input').value = minified;
+                // Re-parsed so the output matches the now comment-free input.
+                jsonDoc = jsoncParse(minified);
+                jsonParsedData = jsonDoc.value;
+                jsonFormattedText = minified;
                 document.getElementById('json-formatted-output').innerHTML = `<pre class="json-pre">${highlightJSON(minified)}</pre>`;
                 jsonNodeCounter = 0;
-                document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonParsedData, null, true)}</div>`;
-                hideJSONError();
+                document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonDoc.root, null, true, jsonDoc)}</div>`;
+                hideJSONError(false);
             } catch (e) {
                 showJSONError(e.message);
             }
@@ -2872,16 +3186,31 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             document.getElementById('json-expand-btn').classList.add('hidden');
             document.getElementById('json-collapse-btn').classList.add('hidden');
             jsonParsedData = null;
+            jsonDoc = null;
+            jsonFormattedText = '';
         });
 
         document.getElementById('json-sample-btn').addEventListener('click', function () {
-            document.getElementById('json-input').value = JSON.stringify({
-                name: "Jane Smith", age: 32, isActive: true,
-                address: { street: "123 Main St", city: "San Francisco", zip: "94102" },
-                tags: ["developer", "designer"],
-                scores: { typescript: 9.5, python: 8.2, rust: 7.0 },
-                metadata: null
-            }, null, 2);
+            document.getElementById('json-input').value = `{
+  // User profile
+  "name": "Jane Smith",
+  "age": 32,
+  "isActive": true, // drives the status pill
+  /* Nested address object,
+     comments can span lines */
+  "address": {
+    "street": "123 Main St",
+    "city": "San Francisco",
+    "zip": "94102",
+  },
+  "tags": ["developer", "designer"], // trailing commas are fine too
+  "scores": {
+    "typescript": 9.5,
+    "python": 8.2,
+    "rust": 7.0
+  },
+  "metadata": null
+}`;
             runFormatJSON();
         });
 
@@ -2889,7 +3218,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             if (!jsonParsedData) return;
             const button = this;
             const orig = button.innerHTML;
-            const text = JSON.stringify(jsonParsedData, null, 2);
+            // Copies what is on screen, comments included (plain JSON copies unchanged)
+            const text = jsonFormattedText || JSON.stringify(jsonParsedData, null, 2);
 
             navigator.clipboard.writeText(text).then(() => {
                 button.innerHTML = '<span class="material-icons-outlined text-sm">check</span>Copied!';
