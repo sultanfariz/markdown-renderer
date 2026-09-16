@@ -10,6 +10,7 @@ A lightweight, browser-based markdown renderer with real-time preview, syntax hi
 - **URL Sharing** - Share rendered markdown via compressed URL (60-75% compression)
 - **Syntax Highlighting** - Code blocks with Prism.js support for multiple languages
 - **Export Diagrams** - Copy Mermaid diagrams as PNG images
+- **JSON Formatter** - Format, minify, copy, share, and browse JSON in a tree view, with JSONC support (`//` and `/* */` comments plus trailing commas)
 - **Responsive Design** - Works on desktop and mobile
 
 ## How to Use
@@ -37,6 +38,17 @@ A lightweight, browser-based markdown renderer with real-time preview, syntax hi
 - Blockquotes
 - Links and images
 - Mermaid diagrams (flowcharts, sequence diagrams, class diagrams)
+
+### JSON Formatter (JSONC)
+
+The **JSON** tab formats, minifies, copies, and shares JSON — and accepts JSONC, the
+dialect used by most config files:
+
+- **Line comments** (`// ...`) and **block comments** (`/* ... */`) are preserved and rendered in the
+  formatted output (muted italic); the tree view shows them as annotations on the entry they belong to
+- **Trailing commas** in objects and arrays are tolerated and normalized away in the output
+- Plain JSON behaves exactly as before, and **Minify** always returns plain comment-free JSON
+- Malformed input still reports an error, now with the line and column of the problem
 
 ## Live Demo
 
