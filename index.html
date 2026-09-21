@@ -2824,6 +2824,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 jsonNodeCounter = 0;
                 document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonParsedData, null, true)}</div>`;
                 hideJSONError();
+                const currentView = document.getElementById('json-tree-output').classList.contains('hidden') ? 'formatted' : 'tree';
+                setJsonView(currentView);
             } catch (e) {
                 showJSONError(e.message);
             }
