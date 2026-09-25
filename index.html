@@ -1666,8 +1666,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                     <div class="flex-1 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
                         <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
                             <div class="flex gap-1">
-                                <button id="json-view-formatted-btn" class="px-3 py-1.5 text-sm font-semibold bg-primary text-white rounded-lg transition-all">Formatted</button>
-                                <button id="json-view-tree-btn" class="px-3 py-1.5 text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-all">Tree</button>
+                                <button id="json-view-formatted-btn" class="px-3 py-1.5 text-sm font-semibold text-secondary-text-light dark:text-secondary-text-dark rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-all">Formatted</button>
+                                <button id="json-view-tree-btn" class="px-3 py-1.5 text-sm font-semibold bg-primary text-white rounded-lg transition-all">Tree</button>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span id="json-valid-badge" class="hidden text-xs font-semibold px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">✓ Valid</span>
@@ -1678,10 +1678,10 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                                 </button>
                             </div>
                         </div>
-                        <div id="json-formatted-output" class="flex-1 overflow-auto p-4">
+                        <div id="json-formatted-output" class="hidden flex-1 overflow-auto p-4">
                             <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see output here...</p>
                         </div>
-                        <div id="json-tree-output" class="hidden flex-1 overflow-auto p-4">
+                        <div id="json-tree-output" class="flex-1 overflow-auto p-4">
                             <p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see tree view here...</p>
                         </div>
                     </div>
@@ -2749,6 +2749,38 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         let jsonDoc = null;
         let jsonFormattedText = '';   // last formatted output, comments included; used by Copy
 
+        // Remembered JSON output view: "tree" | "formatted"
+        const JSON_VIEW_STORAGE_KEY = 'jsonViewMode';
+
+        function getSavedJsonView() {
+            return localStorage.getItem(JSON_VIEW_STORAGE_KEY) === 'formatted' ? 'formatted' : 'tree';
+        }
+
+        // Single source of truth for showing the Formatted or the Tree pane
+        function setJsonView(mode, persist) {
+            const isTree = mode === 'tree';
+
+            document.getElementById('json-tree-output').classList.toggle('hidden', !isTree);
+            document.getElementById('json-formatted-output').classList.toggle('hidden', isTree);
+
+            // Expand/Collapse only apply to the tree, and only once JSON has parsed
+            const showTreeControls = isTree && jsonParsedData !== null;
+            document.getElementById('json-expand-btn').classList.toggle('hidden', !showTreeControls);
+            document.getElementById('json-collapse-btn').classList.toggle('hidden', !showTreeControls);
+
+            const applyButtonState = function (btn, isActive) {
+                btn.classList.toggle('bg-primary', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('text-secondary-text-light', !isActive);
+                btn.classList.toggle('dark:text-secondary-text-dark', !isActive);
+            };
+
+            applyButtonState(document.getElementById('json-view-tree-btn'), isTree);
+            applyButtonState(document.getElementById('json-view-formatted-btn'), !isTree);
+
+            if (persist) localStorage.setItem(JSON_VIEW_STORAGE_KEY, isTree ? 'tree' : 'formatted');
+        }
+
         function jsonEscapeHTML(str) {
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -3150,6 +3182,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 jsonParsedData = jsonDoc.value;
                 renderJSONOutputs(jsonDoc);
                 hideJSONError(jsonDoc.hasComments);
+                setJsonView('tree');
             } catch (e) {
                 showJSONError(e.message);
             }
@@ -3169,6 +3202,8 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 jsonNodeCounter = 0;
                 document.getElementById('json-tree-output').innerHTML = `<div class="json-tree">${buildJsonNode(jsonDoc.root, null, true, jsonDoc)}</div>`;
                 hideJSONError(false);
+                const currentView = document.getElementById('json-tree-output').classList.contains('hidden') ? 'formatted' : 'tree';
+                setJsonView(currentView);
             } catch (e) {
                 showJSONError(e.message);
             }
@@ -3234,30 +3269,15 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         });
 
         document.getElementById('json-view-formatted-btn').addEventListener('click', function () {
-            document.getElementById('json-formatted-output').classList.remove('hidden');
-            document.getElementById('json-tree-output').classList.add('hidden');
-            document.getElementById('json-expand-btn').classList.add('hidden');
-            document.getElementById('json-collapse-btn').classList.add('hidden');
-            this.classList.add('bg-primary', 'text-white');
-            this.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark');
-            const treeBtn = document.getElementById('json-view-tree-btn');
-            treeBtn.classList.remove('bg-primary', 'text-white');
-            treeBtn.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark');
+            setJsonView('formatted', true);
         });
 
         document.getElementById('json-view-tree-btn').addEventListener('click', function () {
-            document.getElementById('json-tree-output').classList.remove('hidden');
-            document.getElementById('json-formatted-output').classList.add('hidden');
-            if (jsonParsedData !== null) {
-                document.getElementById('json-expand-btn').classList.remove('hidden');
-                document.getElementById('json-collapse-btn').classList.remove('hidden');
-            }
-            this.classList.add('bg-primary', 'text-white');
-            this.classList.remove('text-secondary-text-light', 'dark:text-secondary-text-dark');
-            const fmtBtn = document.getElementById('json-view-formatted-btn');
-            fmtBtn.classList.remove('bg-primary', 'text-white');
-            fmtBtn.classList.add('text-secondary-text-light', 'dark:text-secondary-text-dark');
+            setJsonView('tree', true);
         });
+
+        // Restore the last used view (Tree unless the user picked Formatted)
+        setJsonView(getSavedJsonView());
 
         document.getElementById('json-expand-btn').addEventListener('click', function () {
             document.querySelectorAll('#json-tree-output .json-children').forEach(el => { el.style.display = 'block'; });
