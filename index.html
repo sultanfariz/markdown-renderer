@@ -3252,7 +3252,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         });
 
         document.getElementById('json-copy-btn').addEventListener('click', function () {
-            if (!jsonParsedData) return;
+            if (jsonDoc === null) return;
             const button = this;
             const orig = button.innerHTML;
             // Copies what is on screen, comments included (plain JSON copies unchanged)
