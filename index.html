@@ -2989,7 +2989,9 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             if (node.kind === 'value') return node.value;
             if (node.kind === 'array') return node.entries.map(e => jsoncPlainValue(e.value));
             const obj = {};
-            node.entries.forEach(e => { obj[e.key] = jsoncPlainValue(e.value); });
+            node.entries.forEach(e => Object.defineProperty(obj, e.key, {
+                value: jsoncPlainValue(e.value), enumerable: true, configurable: true, writable: true
+            }));
             return obj;
         }
 
