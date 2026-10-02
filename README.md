@@ -49,6 +49,7 @@ dialect used by most config files:
 - **Trailing commas** in objects and arrays are tolerated and normalized away in the output
 - Plain JSON behaves exactly as before, and **Minify** always returns plain comment-free JSON
 - Malformed input still reports an error, now with the line and column of the problem
+- **Share** compresses the content into a `?json=` link (the same scheme as markdown sharing), so links work at any size and opening one lands on the JSON tab with the content restored
 
 ## Live Demo
 
