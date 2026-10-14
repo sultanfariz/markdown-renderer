@@ -1327,7 +1327,7 @@
             <header class="mb-8">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-3xl font-bold tracking-tight">Markdown Renderer</h1>
-                    <button class="p-2 rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle">
+                    <button class="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark glass-effect border border-border-light dark:border-border-dark" id="theme-toggle" aria-label="Toggle color theme">
                         <span class="material-icons-outlined dark:hidden">dark_mode</span>
                         <span class="material-icons-outlined hidden dark:inline">light_mode</span>
                     </button>
@@ -1643,7 +1643,10 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                     <!-- Left: Input -->
                     <div class="w-1/2 bg-surface-light dark:bg-surface-dark glass-effect rounded-lg shadow-lg overflow-hidden border border-border-light dark:border-border-dark flex flex-col">
                         <div class="flex items-center justify-between p-4 border-b border-border-light dark:border-border-dark">
-                            <h2 class="text-lg font-semibold">JSON Input</h2>
+                            <div>
+                                <h2 class="text-lg font-semibold">JSON Input</h2>
+                                <span id="json-byte-size" class="text-xs text-secondary-text-light dark:text-secondary-text-dark" title="UTF-8 size of the current input (1 KB = 1,000 bytes)">0.00 KB</span>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <button id="json-sample-btn" class="px-3 py-1.5 text-sm font-medium text-secondary-text-light dark:text-secondary-text-dark hover:text-primary transition-colors">Sample</button>
                                 <button id="json-format-btn" class="px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg shadow hover:bg-opacity-90 focus:outline-none transition-all">Format</button>
@@ -1941,6 +1944,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         clearCsvBtn.addEventListener('click', function() {
             csvInput.value = '';
+            saveInputDraft('csv-input');
             markdownOutput.innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Markdown output will appear here after conversion...</p>';
             previewSection.style.display = 'none';
         });
@@ -2134,6 +2138,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         
         function clearContent() {
             document.getElementById('markdown-input').value = '';
+            saveInputDraft('markdown-input');
             document.getElementById('rendered-content').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic">Content cleared. Paste new markdown content above and render it!</p>';
         }
 
@@ -2319,6 +2324,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
                     if (decompressed) {
                         document.getElementById('markdown-input').value = decompressed;
+                        saveInputDraft('markdown-input');
                         // Auto-render after a short delay to ensure everything is loaded
                         setTimeout(() => renderMarkdown(), 100);
                     } else {
@@ -2349,6 +2355,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
                 switchToJson();
                 document.getElementById('json-input').value = decompressed;
+                saveInputDraft('json-input');
                 setTimeout(() => runFormatJSON(), 100);
 
             } catch (error) {
@@ -2504,6 +2511,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         // Auto-render on page load
         window.addEventListener('load', function() {
+            restoreInputDrafts();
             loadFromURL();       // handles ?md=
             loadJSONFromURL();   // handles ?json=
 
@@ -2742,6 +2750,44 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         }
 
         // ==================== JSON FORMATTER ====================
+        // Persist raw drafts, including empty or incomplete input. URL content loads afterward.
+        const draftInputIds = ['markdown-input', 'csv-input', 'json-input'];
+
+        function updateJSONByteSize() {
+            const bytes = new TextEncoder().encode(document.getElementById('json-input').value).length;
+            document.getElementById('json-byte-size').textContent = `${(bytes / 1000).toFixed(2)} KB`;
+        }
+
+        function saveInputDraft(id) {
+            if (id === 'json-input') updateJSONByteSize();
+            try {
+                localStorage.setItem('draft:' + id, document.getElementById(id).value);
+            } catch (error) {
+                console.warn('Unable to save input draft:', error);
+            }
+        }
+
+        function restoreInputDrafts() {
+            draftInputIds.forEach(id => {
+                try {
+                    const saved = localStorage.getItem('draft:' + id);
+                    if (saved !== null) document.getElementById(id).value = saved;
+                } catch (error) {
+                    console.warn('Unable to restore input draft:', error);
+                }
+            });
+            updateJSONByteSize();
+            if (document.getElementById('json-input').value.trim()) {
+                runFormatJSON();
+                setJsonView(getSavedJsonView());
+            }
+            if (csvInput.value.trim()) convertCSV();
+        }
+
+        draftInputIds.forEach(id => {
+            document.getElementById(id).addEventListener('input', () => saveInputDraft(id));
+        });
+
         let jsonNodeCounter = 0;
         let jsonParsedData = null;
         let jsonDoc = null;
@@ -3150,7 +3196,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
                 .map((entry, idx) => buildJsonNode(entry.value, isArr ? null : entry.key, idx === entries.length - 1, entry))
                 .join('');
 
-            return `${leadingRows}<div class="json-row"><button type="button" class="json-toggle" aria-expanded="true">&#9660;</button>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count}</span><div class="json-children" id="${id}">${children}${dangling}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}${inlineComments}</div></div>`;
+            return `${leadingRows}<div class="json-row"><button type="button" class="json-toggle" aria-expanded="true">&#9660;</button>${keySpan}<span class="json-punct">${open}</span><span class="json-summary" style="display:none">${count} <span class="json-punct">${close}</span></span><div class="json-children" id="${id}">${children}${dangling}</div><div class="json-closer"><span class="json-punct">${close}</span>${comma}${inlineComments}</div></div>`;
         }
 
         function showJSONError(msg) {
@@ -3194,6 +3240,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
             try {
                 const minified = JSON.stringify(jsoncParse(input).value);
                 document.getElementById('json-input').value = minified;
+                saveInputDraft('json-input');
                 // Re-parsed so the output matches the now comment-free input.
                 jsonDoc = jsoncParse(minified);
                 jsonParsedData = jsonDoc.value;
@@ -3214,6 +3261,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
 
         document.getElementById('json-clear-btn').addEventListener('click', function () {
             document.getElementById('json-input').value = '';
+            saveInputDraft('json-input');
             document.getElementById('json-formatted-output').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see output here...</p>';
             document.getElementById('json-tree-output').innerHTML = '<p class="text-secondary-text-light dark:text-secondary-text-dark italic text-sm">Format JSON to see tree view here...</p>';
             document.getElementById('json-error').classList.add('hidden');
@@ -3246,6 +3294,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
   },
   "metadata": null
 }`;
+            saveInputDraft('json-input');
             runFormatJSON();
         });
 
@@ -3280,37 +3329,30 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         setJsonView(getSavedJsonView());
 
         document.getElementById('json-expand-btn').addEventListener('click', function () {
-            document.querySelectorAll('#json-tree-output .json-children').forEach(el => { el.style.display = 'block'; });
-            document.querySelectorAll('#json-tree-output .json-closer').forEach(el => { el.style.display = 'block'; });
-            document.querySelectorAll('#json-tree-output .json-summary').forEach(el => { el.style.display = 'none'; });
-            document.querySelectorAll('#json-tree-output .json-toggle').forEach(el => { el.innerHTML = '&#9660;'; });
+            document.querySelectorAll('#json-tree-output .json-toggle').forEach(btn => setJsonNodeExpanded(btn, true));
         });
 
         document.getElementById('json-collapse-btn').addEventListener('click', function () {
-            const nodes = document.querySelectorAll('#json-tree-output .json-children');
-            const closers = document.querySelectorAll('#json-tree-output .json-closer');
-            const summaries = document.querySelectorAll('#json-tree-output .json-summary');
-            const toggles = document.querySelectorAll('#json-tree-output .json-toggle');
-            nodes.forEach((el, i) => { if (i > 0) el.style.display = 'none'; });
-            closers.forEach((el, i) => { if (i > 0) el.style.display = 'none'; });
-            summaries.forEach((el, i) => { if (i > 0) el.style.display = 'inline'; });
-            toggles.forEach((el, i) => { if (i > 0) el.innerHTML = '&#9654;'; });
+            document.querySelectorAll('#json-tree-output .json-toggle').forEach((btn, i) => setJsonNodeExpanded(btn, i === 0));
         });
 
-        document.getElementById('json-tree-output').addEventListener('click', function (e) {
-            const btn = e.target.closest('.json-toggle');
-            if (!btn) return;
+        function setJsonNodeExpanded(btn, expanded) {
             const row = btn.parentElement;
             const childrenEl = Array.from(row.children).find(c => c.classList.contains('json-children'));
             const closer = Array.from(row.children).find(c => c.classList.contains('json-closer'));
             const summary = Array.from(row.children).find(c => c.classList.contains('json-summary'));
             if (!childrenEl) return;
-            const isCollapsed = childrenEl.style.display === 'none';
-            childrenEl.style.display = isCollapsed ? 'block' : 'none';
-            if (closer) closer.style.display = isCollapsed ? 'block' : 'none';
-            if (summary) summary.style.display = isCollapsed ? 'none' : 'inline';
-            btn.innerHTML = isCollapsed ? '&#9660;' : '&#9654;';
-            btn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+            childrenEl.style.display = expanded ? 'block' : 'none';
+            if (closer) closer.style.display = expanded ? 'block' : 'none';
+            if (summary) summary.style.display = expanded ? 'none' : 'inline';
+            btn.innerHTML = expanded ? '&#9660;' : '&#9654;';
+            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        }
+
+        document.getElementById('json-tree-output').addEventListener('click', function (e) {
+            const btn = e.target.closest('.json-toggle');
+            if (!btn) return;
+            setJsonNodeExpanded(btn, btn.getAttribute('aria-expanded') !== 'true');
         });
 
         document.getElementById('json-input').addEventListener('keydown', function (e) {

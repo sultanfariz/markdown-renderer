@@ -10,7 +10,7 @@
 const fs = require('fs');
 const vm = require('vm');
 
-const INDEX = process.env.INDEX_HTML || '/root/tribe/worktrees/tc-hunter-fix-pr13-hashrouting/index.html';
+const INDEX = process.env.INDEX_HTML || require('path').join(__dirname, '..', 'index.html');
 const html = fs.readFileSync(INDEX, 'utf8');
 const scripts = html.match(/<script>([\s\S]*?)<\/script>/g) || [];
 // The main app script is the longest inline <script> block.
@@ -24,6 +24,7 @@ class MockClassList {
   add(...c) { c.forEach(x => this.set.add(x)); }
   remove(...c) { c.forEach(x => this.set.delete(x)); }
   contains(c) { return this.set.has(c); }
+  toggle(c, force = !this.contains(c)) { force ? this.add(c) : this.remove(c); return force; }
 }
 
 class MockElement {
@@ -42,7 +43,7 @@ class MockElement {
   focus() {}
 }
 
-function makeWorld(initialSearch = '', initialHash = '') {
+function makeWorld(initialSearch = '', initialHash = '', storage) {
   // --- DOM ---
   // Match real HTML initial state: tab-renderer active (text-primary/border-primary),
   // renderer-page visible, csv/json pages hidden.
@@ -148,7 +149,8 @@ function makeWorld(initialSearch = '', initialHash = '') {
     location,
     URL,
     URLSearchParams,
-    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    localStorage: storage || { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    TextEncoder,
     atob: s => Buffer.from(s, 'base64').toString('binary'),
     pako: { inflate: () => '{}' },   // valid JSON payload for ?json= / ?md=
     mermaid: { initialize: () => {}, run: () => {} },
@@ -164,7 +166,7 @@ function makeWorld(initialSearch = '', initialHash = '') {
   while (pendingTasks.length) pendingTasks.shift()();
 
   return {
-    window, history, byId, pendingTasks,
+    window, history, byId, pendingTasks, sandbox,
     tabRenderer: elements['tab-renderer'],
     tabCsv: elements['tab-csv'],
     tabJson: elements['tab-json'],
@@ -182,6 +184,9 @@ function makeWorld(initialSearch = '', initialHash = '') {
   };
 }
 
+module.exports = { makeWorld };
+
+if (require.main === module) {
 let failures = 0;
 function check(name, cond, detail = '') {
   const ok = !!cond;
@@ -307,3 +312,4 @@ function check(name, cond, detail = '') {
 
 console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);
 process.exit(failures === 0 ? 0 : 1);
+}
