@@ -7,6 +7,7 @@ A lightweight, browser-based markdown renderer with real-time preview, syntax hi
 - **Real-time Rendering** - Instant markdown preview with syntax highlighting
 - **Mermaid Diagrams** - Render flowcharts, sequence diagrams, and class diagrams
 - **Dark Mode** - Toggle between light and dark themes
+- **Saved Drafts** - Markdown, CSV, and JSON inputs are saved in your browser and restored on reload; shared links take priority over saved drafts
 - **URL Sharing** - Share rendered markdown via compressed URL (60-75% compression)
 - **Syntax Highlighting** - Code blocks with Prism.js support for multiple languages
 - **Export Diagrams** - Copy Mermaid diagrams as PNG images
@@ -50,6 +51,8 @@ dialect used by most config files:
 - Plain JSON behaves exactly as before, and **Minify** always returns plain comment-free JSON
 - Malformed input still reports an error, now with the line and column of the problem
 - **Share** compresses the content into a `?json=` link (the same scheme as markdown sharing), so links work at any size and opening one lands on the JSON tab with the content restored
+- The input size shows the UTF-8 size in KB (1 KB = 1,000 bytes), with two decimal places, including whitespace and comments, and updates as you type
+- Collapsed tree nodes show matching brackets, such as `{ 4 keys }` and `[ 3 items ]`
 
 ## Live Demo
 
