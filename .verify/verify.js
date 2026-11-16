@@ -55,7 +55,7 @@ function makeWorld(initialSearch = '', initialHash = '', storage) {
     'csv-page': new MockElement('csv-page'),
     'json-page': new MockElement('json-page'),
   };
-  elements['renderer-page'].style.display = 'block';
+  elements['renderer-page'].style.display = 'flex';
   elements['csv-page'].style.display = 'none';
   elements['json-page'].style.display = 'none';
 
@@ -174,7 +174,7 @@ function makeWorld(initialSearch = '', initialHash = '', storage) {
       const r = elements['renderer-page'].style.display;
       const c = elements['csv-page'].style.display;
       const j = elements['json-page'].style.display;
-      return r === 'block' ? 'renderer' : c === 'block' ? 'csv' : j === 'block' ? 'json' : 'none';
+      return r === 'flex' ? 'renderer' : c === 'block' ? 'csv' : j === 'block' ? 'json' : 'none';
     },
     activeTab() {
       return ['tab-renderer', 'tab-csv', 'tab-json'].find(id => elements[id].classList.contains('text-primary'));

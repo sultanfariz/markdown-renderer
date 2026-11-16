@@ -858,8 +858,6 @@
 
             #renderer-page {
                 gap: 0.5rem;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
             }
         }
 
@@ -868,11 +866,6 @@
                 width: 45vw;
                 min-width: 120px;
                 max-width: 60vw;
-            }
-
-            #renderer-page {
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
             }
         }
 
@@ -901,6 +894,10 @@
 
             #resize-handle {
                 display: none;
+            }
+
+            #markdown-input {
+                min-height: 200px;
             }
 
             #editor-content {
@@ -1773,7 +1770,7 @@ Bob Johnson,45,Chicago,Designer"></textarea>
         }
 
         function switchToRenderer() {
-            rendererPage.style.display = 'block';
+            rendererPage.style.display = 'flex';
             csvPage.style.display = 'none';
             jsonPage.style.display = 'none';
             setActiveTab(tabRenderer);
