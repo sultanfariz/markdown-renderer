@@ -9,6 +9,7 @@ A lightweight, browser-based markdown renderer with real-time preview, syntax hi
 - **Dark Mode** - Toggle between light and dark themes
 - **Saved Drafts** - Markdown, CSV, and JSON inputs are saved in your browser and restored on reload; shared links take priority over saved drafts
 - **URL Sharing** - Share rendered markdown via compressed URL (60-75% compression)
+- **Section Links** - Jump to headings using Markdown links such as `[Browser Worker](#browser-worker)`
 - **Syntax Highlighting** - Code blocks with Prism.js support for multiple languages
 - **Export Diagrams** - Copy Mermaid diagrams as PNG images
 - **JSON Formatter** - Format, minify, copy, share, and browse JSON in a tree view, with JSONC support (`//` and `/* */` comments plus trailing commas)
@@ -28,6 +29,9 @@ A lightweight, browser-based markdown renderer with real-time preview, syntax hi
 2. Click the **Share** button
 3. URL is automatically copied to clipboard
 4. Share the URL - recipients see the rendered markdown instantly
+5. Add a heading fragment such as `#browser-worker` to link directly to a section
+
+The fragments `#markdown-renderer`, `#csv-to-markdown`, and `#json-formatter` are reserved for the app tabs.
 
 ### Supported Markdown
 

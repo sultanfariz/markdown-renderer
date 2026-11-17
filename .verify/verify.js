@@ -55,7 +55,7 @@ function makeWorld(initialSearch = '', initialHash = '', storage) {
     'csv-page': new MockElement('csv-page'),
     'json-page': new MockElement('json-page'),
   };
-  elements['renderer-page'].style.display = 'block';
+  elements['renderer-page'].style.display = 'flex';
   elements['csv-page'].style.display = 'none';
   elements['json-page'].style.display = 'none';
 
@@ -174,7 +174,7 @@ function makeWorld(initialSearch = '', initialHash = '', storage) {
       const r = elements['renderer-page'].style.display;
       const c = elements['csv-page'].style.display;
       const j = elements['json-page'].style.display;
-      return r === 'block' ? 'renderer' : c === 'block' ? 'csv' : j === 'block' ? 'json' : 'none';
+      return r === 'flex' ? 'renderer' : c === 'block' ? 'csv' : j === 'block' ? 'json' : 'none';
     },
     activeTab() {
       return ['tab-renderer', 'tab-csv', 'tab-json'].find(id => elements[id].classList.contains('text-primary'));
@@ -275,16 +275,16 @@ function check(name, cond, detail = '') {
   check('S7b: URL stays #csv-to-markdown', w.currentHash() === '#csv-to-markdown', w.currentHash());
 }
 
-// ============ Scenario 8: unknown hash defaults to active tab's hash ============
+// ============ Scenario 8: unknown hash is preserved for a possible section ============
 {
   const w = makeWorld('', '#garbage');
   check('S8: unknown hash -> renderer tab', w.visible() === 'renderer', w.visible());
-  check('S8: URL fixed to #markdown-renderer', w.currentHash() === '#markdown-renderer', w.currentHash());
+  check('S8: section hash preserved', w.currentHash() === '#garbage', w.currentHash());
 }
 {
   const w = makeWorld('?json=SGVsbG8', '#garbage');
   check('S8b: ?json= + unknown hash -> JSON tab', w.visible() === 'json', w.visible());
-  check('S8b: URL fixed to #json-formatter', w.currentHash() === '#json-formatter', w.currentHash());
+  check('S8b: section hash preserved', w.currentHash() === '#garbage', w.currentHash());
 }
 
 // ============ Scenario 9: live hashchange (manual URL edit) ============
